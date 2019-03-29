@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+    <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?attr/action_bar_background_color"
+            android:padding="@dimen/app_padding">
+
+        <TextView
+                android:id="@+id/title"
+                android:text="@string/title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="start"
+                android:textSize="@dimen/action_bar_text_size"
+                android:textColor="?attr/action_bar_text_color"/>
+
+    </androidx.appcompat.widget.Toolbar>
+
+    <fragment
+            android:id="@+id/chart_fragment"
+            android:name="tech.harmonysoft.oss.leonardo.example.view.ChartFragment"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+
+</LinearLayout>
