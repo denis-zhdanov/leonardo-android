@@ -22,6 +22,16 @@
                 android:textSize="@dimen/action_bar_text_size"
                 android:textColor="?attr/action_bar_text_color"/>
 
+        <ImageView
+                android:id="@+id/theme_switcher"
+                android:contentDescription="@string/theme_switcher"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_alignParentEnd="true"
+                android:src="@drawable/ic_moon"
+                android:layout_gravity="end"/>
+
     </androidx.appcompat.widget.Toolbar>
 
     <fragment

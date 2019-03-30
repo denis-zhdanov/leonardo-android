@@ -182,6 +182,7 @@ class ChartView @JvmOverloads constructor(
                                          xLabelStrategy = config.xAxisConfig.labelTextStrategy,
                                          animationEnabled = config.animationEnabled,
                                          xRescaleAnimator = xRescaleAnimator)
+            invalidate()
         }
     }
 
