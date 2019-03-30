@@ -5,12 +5,10 @@
               android:layout_height="match_parent"
               android:padding="@dimen/app_padding">
 
-    <tech.harmonysoft.oss.leonardo.view.ChartView
+    <tech.harmonysoft.oss.leonardo.view.chart.ChartView
             android:id="@+id/chart"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_marginStart="@dimen/app_padding"
-            android:layout_marginEnd="@dimen/app_padding"/>
+            android:layout_height="match_parent"/>
 
     <tech.harmonysoft.oss.leonardo.view.NavigatorChartView
             android:id="@+id/navigator"

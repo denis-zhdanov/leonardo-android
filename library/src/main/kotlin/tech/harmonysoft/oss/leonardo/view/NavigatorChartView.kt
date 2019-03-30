@@ -16,6 +16,7 @@ import tech.harmonysoft.oss.leonardo.model.data.ChartDataSource
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModel
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModelListener
 import tech.harmonysoft.oss.leonardo.view.NavigatorChartView.ActionType.*
+import tech.harmonysoft.oss.leonardo.view.chart.ChartView
 
 /**
  * @author Denis Zhdanov
@@ -111,9 +112,9 @@ class NavigatorChartView @JvmOverloads constructor(
     private fun refreshMyRange() {
         val navigatorRange = mModel.getActiveRange(getModelAnchor())
         mModel.setActiveRange(navigatorRange, mView)
-        val dependencyPointsNumber = Math.max(1, navigatorRange.size / 4)
-        val dependencyRangeShift = (navigatorRange.size - dependencyPointsNumber) / 2
-        val dependencyRangeStart = navigatorRange.start + dependencyRangeShift
+        val dependencyPointsNumber = Math.max(1, (navigatorRange.size + 1) / 4)
+        val dependencyRangeShift = (navigatorRange.size + 1 - dependencyPointsNumber) / 2
+        val dependencyRangeStart = navigatorRange.start + 1 + dependencyRangeShift
         val dependencyRange = Range(dependencyRangeStart,
                                     dependencyRangeStart + dependencyPointsNumber)
         mModel.setActiveRange(dependencyRange, mShowCase.dataAnchor)
@@ -340,7 +341,7 @@ class NavigatorChartView @JvmOverloads constructor(
     private fun getShowCaseVisualRatio(): Float {
         val navigatorDataRange = mModel.getActiveRange(getModelAnchor())
         val showCaseDataRange = mModel.getActiveRange(mShowCase.dataAnchor)
-        return (navigatorDataRange.size - 1f) / (showCaseDataRange.size - 1f)
+        return navigatorDataRange.size.toFloat() / showCaseDataRange.size.toFloat()
     }
 
     private fun getNavigatorVisualShift(): Float {

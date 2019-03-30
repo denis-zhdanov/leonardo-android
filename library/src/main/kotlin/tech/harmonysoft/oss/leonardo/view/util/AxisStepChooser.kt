@@ -66,13 +66,14 @@ class AxisStepChooser {
                           step: Long,
                           firstValue: Long): CheckResult {
         var remainingVisualSpace = availableVisualSpace
-        if (firstValue == java.lang.Long.MIN_VALUE) {
+        if (firstValue == Long.MIN_VALUE) {
             return CheckResult.TOO_BIG
         }
         var labelsNumber = 0
         var value = firstValue
-        while (range.contains(value) && availableVisualSpace >= 0) {
-            val labelSize = measurer.measureVisualSpace(textStrategy.getLabel(value, step))
+        while (range.contains(value) && remainingVisualSpace >= 0) {
+            val label = textStrategy.getLabel(value, step)
+            val labelSize = measurer.measureVisualSpace(label)
             remainingVisualSpace -= labelSize
             value += step
             labelsNumber++
@@ -83,7 +84,7 @@ class AxisStepChooser {
                 remainingVisualSpace -= minGapStrategy(labelSize)
             }
         }
-        return if (availableVisualSpace >= 0) {
+        return if (remainingVisualSpace >= 0) {
             if (labelsNumber > 2) {
                 CheckResult.OK
             } else {
@@ -97,5 +98,9 @@ class AxisStepChooser {
 
     private enum class CheckResult {
         TOO_BIG, TOO_SMALL, OK
+    }
+
+    companion object {
+        val INSTANCE = AxisStepChooser()
     }
 }

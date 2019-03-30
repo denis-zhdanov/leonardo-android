@@ -93,8 +93,8 @@ class ChartModelImpl(private val bufferPagesCount: Int) : ChartModel {
 
     private fun refreshBufferRange() {
         _bufferRange = Range(
-            compoundActiveRange.start - bufferPagesCount * compoundActiveRange.size,
-            compoundActiveRange.end + bufferPagesCount * compoundActiveRange.size
+            compoundActiveRange.start - bufferPagesCount * (compoundActiveRange.size + 1),
+            compoundActiveRange.end + bufferPagesCount * (compoundActiveRange.size + 1)
         )
     }
 

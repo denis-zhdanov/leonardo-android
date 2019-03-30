@@ -10,14 +10,13 @@ import tech.harmonysoft.oss.leonardo.example.R
 import tech.harmonysoft.oss.leonardo.example.data.InfiniteChartDataLoader
 import tech.harmonysoft.oss.leonardo.model.Range
 import tech.harmonysoft.oss.leonardo.model.config.LeonardoConfigFactory
-import tech.harmonysoft.oss.leonardo.model.config.axis.impl.TimeValueRepresentationStrategy
 import tech.harmonysoft.oss.leonardo.model.data.ChartDataSource
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModel
 import tech.harmonysoft.oss.leonardo.model.runtime.impl.ChartDataAutoLoader
 import tech.harmonysoft.oss.leonardo.model.runtime.impl.ChartModelImpl
 import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil
-import tech.harmonysoft.oss.leonardo.view.ChartView
 import tech.harmonysoft.oss.leonardo.view.NavigatorChartView
+import tech.harmonysoft.oss.leonardo.view.chart.ChartView
 
 /**
  * @author Denis Zhdanov
@@ -43,8 +42,8 @@ class ChartFragment : Fragment() {
     private fun initUi(chart: ChartView, navigator: NavigatorChartView) {
         val chartConfig = LeonardoConfigFactory.newChartConfigBuilder()
             .withContext(context!!)
-            .withXAxisConfigBuilder(LeonardoConfigFactory.newAxisConfigBuilder()
-                                        .withLabelTextStrategy(TimeValueRepresentationStrategy.INSTANCE))
+            .withXAxisConfigBuilder(LeonardoConfigFactory.newAxisConfigBuilder())
+//                                        .withLabelTextStrategy(TimeValueRepresentationStrategy.INSTANCE))
             .build()
 
         chart.apply(chartConfig)

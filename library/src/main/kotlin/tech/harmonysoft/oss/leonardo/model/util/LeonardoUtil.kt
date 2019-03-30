@@ -4,7 +4,7 @@ import android.content.Context
 import android.graphics.Color
 import android.util.TypedValue
 import tech.harmonysoft.oss.leonardo.R
-import tech.harmonysoft.oss.leonardo.view.ChartView
+import tech.harmonysoft.oss.leonardo.view.chart.ChartView
 import tech.harmonysoft.oss.leonardo.view.NavigatorShowcase
 
 /**
@@ -77,10 +77,10 @@ object LeonardoUtil {
 
     fun asNavigatorShowCase(view: ChartView): NavigatorShowcase {
         return object : NavigatorShowcase {
-            override val dataAnchor get() = view.getDataAnchor()
+            override val dataAnchor get() = view.dataAnchor
 
             override val visualXShift: Float
-                get() = view.getXVisualShift()
+                get() = view.xVisualShift
 
             override fun scrollHorizontally(deltaVisualX: Float) {
                 view.scrollHorizontally(deltaVisualX)
