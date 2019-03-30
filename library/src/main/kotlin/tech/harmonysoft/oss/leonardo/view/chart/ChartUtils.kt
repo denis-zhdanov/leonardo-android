@@ -3,6 +3,7 @@ package tech.harmonysoft.oss.leonardo.view.chart
 import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.Typeface
+import android.view.View
 import tech.harmonysoft.oss.leonardo.model.Range
 import tech.harmonysoft.oss.leonardo.model.config.chart.ChartConfig
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModel
@@ -15,7 +16,7 @@ import tech.harmonysoft.oss.leonardo.view.util.X_AXIS_LABEL_GAP_STRATEGY
  * @author Denis Zhdanov
  * @since 29/3/19
  */
-internal class ChartDrawContext(private val config: ChartConfig) {
+internal class ChartDrawSetup(private val config: ChartConfig) {
 
     private val paint = Paint()
 
@@ -45,60 +46,88 @@ internal class ChartDrawContext(private val config: ChartConfig) {
                 alpha = 255
             }
         }
+
+    val yLabelPaint: Paint
+        get() {
+            return paint.apply {
+                color = config.yAxisConfig.labelColor
+                paint.textSize = config.yAxisConfig.labelFontSizeInPixels.toFloat()
+                paint.typeface = Typeface.DEFAULT
+                alpha = 255
+            }
+        }
 }
 
-internal class ChartDimensions(
-    drawContext: ChartDrawContext,
+internal class ChartDrawData(
+    drawSetup: ChartDrawSetup,
+    view: View,
+    xLabelStrategy: ValueRepresentationStrategy,
+    yLabelStrategy: ValueRepresentationStrategy,
 
     private val model: ChartModel,
     private val dataAnchor: Any,
+
     private val axisStepChooser: AxisStepChooser = AxisStepChooser.INSTANCE,
-    private val xLabelStrategy: ValueRepresentationStrategy,
-    private val animationEnabled: Boolean,
-    private val xRescaleAnimator: AxisRescaleAnimator
+    private val animationEnabled: Boolean
 ) {
 
-    private val xWidthMeasurer = TextWidthMeasurer(drawContext.xLabelPaint)
-    private var chartWidth = 0
+    val xAxis = AxisData(drawSetup.xLabelPaint, xLabelStrategy, AxisRescaleAnimator(view))
+    val yAxis = AxisData(drawSetup.yLabelPaint, yLabelStrategy, AxisRescaleAnimator(view))
 
-    val xAxisLabelHeight = run {
-        val bounds = Rect()
-        drawContext.xLabelPaint.getTextBounds("J", 0, 1, bounds)
-        bounds.height()
-    }
-    val xAxisLabelVerticalPadding = xAxisLabelHeight / 2
-    var xRange: Range = Range.EMPTY_RANGE
-    var xAxisStep = 1L
-    var xUnitWidth: Float = 0f
-    var xVisualShift = 0f
+    private val xWidthMeasurer = TextWidthMeasurer(drawSetup.xLabelPaint)
 
     fun refresh(currentWidth: Int, currentHeight: Int) {
-        refreshX(currentWidth)
+        val activeRange = model.getActiveRange(dataAnchor)
+        refreshAxis(activeRange, currentWidth, xAxis)
     }
 
-    private fun refreshX(currentWidth: Int) {
-        val activeRange = model.getActiveRange(dataAnchor)
-        val rescale = (activeRange.size != xRange.size) || (chartWidth != currentWidth)
-        val initialRange = xRange
-        val initialStep = xAxisStep
-        val initialWidth = chartWidth
-        xRange = activeRange
+    private fun refreshAxis(currentValuesRange: Range, availableSize: Int, data: AxisData) {
+        val rescale = (currentValuesRange.size != data.range.size) || (availableSize != data.availableSize)
+        val initialRange = data.range
+        val initialStep = data.axisStep
+        val initialSize = data.availableSize
+        data.range = currentValuesRange
         if (!rescale) {
             return
         }
 
-        chartWidth = currentWidth
-        xVisualShift = 0f
+        data.availableSize = availableSize
+        data.visualShift = 0f
 
-        xAxisStep = axisStepChooser.choose(xLabelStrategy,
-                                           X_AXIS_LABEL_GAP_STRATEGY,
-                                            activeRange,
-                                           chartWidth,
-                                           xWidthMeasurer)
-        xUnitWidth = chartWidth.toFloat() / activeRange.size.toFloat()
+        data.axisStep = axisStepChooser.choose(data.valueStrategy,
+                                               X_AXIS_LABEL_GAP_STRATEGY,
+                                               currentValuesRange,
+                                               availableSize,
+                                               xWidthMeasurer)
+        data.unitSize = availableSize.toFloat() / currentValuesRange.size.toFloat()
 
-        if (animationEnabled && initialWidth > 0) {
-            xRescaleAnimator.animate(initialRange, xRange, initialStep, currentWidth)
+        if (animationEnabled && initialSize > 0) {
+            data.animator.animate(initialRange, data.range, initialStep, availableSize)
         }
+    }
+}
+
+internal class AxisData(
+    paint: Paint,
+    val valueStrategy: ValueRepresentationStrategy,
+    val animator: AxisRescaleAnimator
+) {
+    var range: Range = Range.EMPTY_RANGE
+    var axisStep = 1L
+    var unitSize: Float = 0f
+    var visualShift = 0f
+
+    val labelWidth: Int
+    val labelHeight: Int
+    val verticalLabelPadding: Int
+
+    var availableSize = 0
+
+    init {
+        val bounds = Rect()
+        paint.getTextBounds("W", 0, 1, bounds)
+        labelWidth = bounds.width()
+        labelHeight = bounds.height()
+        verticalLabelPadding = labelHeight / 2
     }
 }
