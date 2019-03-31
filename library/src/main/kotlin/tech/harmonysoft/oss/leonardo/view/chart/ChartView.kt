@@ -1108,20 +1108,22 @@ class ChartView @JvmOverloads constructor(
     }
 
     private fun startDataSourceFadeInAnimation(dataSource: ChartDataSource) {
-        if (!mChartConfig.animationEnabled) {
-            return
-        }
-        mAnimationDataSourceInfo[dataSource] =
-            DataSourceAnimationContext(0, 255)
+        // TODO den uncomment
+//        if (!mChartConfig.animationEnabled) {
+//            return
+//        }
+//        mAnimationDataSourceInfo[dataSource] =
+//            DataSourceAnimationContext(0, 255)
         invalidate()
     }
 
     private fun startDataSourceFadeOutAnimation(dataSource: ChartDataSource) {
-        if (!mChartConfig.animationEnabled) {
-            return
-        }
-        mAnimationDataSourceInfo[dataSource] =
-            DataSourceAnimationContext(255, 0)
+        // TODO den uncomment
+//        if (!mChartConfig.animationEnabled) {
+//            return
+//        }
+//        mAnimationDataSourceInfo[dataSource] =
+//            DataSourceAnimationContext(255, 0)
         invalidate()
     }
 

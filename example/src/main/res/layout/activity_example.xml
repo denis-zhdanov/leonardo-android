@@ -38,6 +38,12 @@
             android:id="@+id/chart_fragment"
             android:name="tech.harmonysoft.oss.leonardo.example.view.ChartFragment"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"/>
+            android:layout_height="wrap_content"/>
+
+    <fragment
+            android:id="@+id/settings_fragment"
+            android:name="tech.harmonysoft.oss.leonardo.example.view.SettingsFragment"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
 
 </LinearLayout>

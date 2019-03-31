@@ -66,4 +66,8 @@ class RoundedRectangleDrawer {
         // Bottom edge
         canvas.drawLine(rect.left + radius, rect.bottom, rect.right - radius, rect.bottom, paint)
     }
+
+    companion object {
+        val INSTANCE = RoundedRectangleDrawer()
+    }
 }

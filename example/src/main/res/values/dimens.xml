@@ -2,4 +2,5 @@
 <resources>
     <dimen name="app_padding">16dp</dimen>
     <dimen name="action_bar_text_size">24sp</dimen>
+    <dimen name="checkbox_edge">32dp</dimen>
 </resources>

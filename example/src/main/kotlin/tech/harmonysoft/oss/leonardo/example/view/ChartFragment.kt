@@ -13,6 +13,7 @@ import androidx.fragment.app.Fragment
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import tech.harmonysoft.oss.leonardo.example.R
 import tech.harmonysoft.oss.leonardo.example.data.InfiniteChartDataLoader
+import tech.harmonysoft.oss.leonardo.example.data.ModelHolder
 import tech.harmonysoft.oss.leonardo.model.Range
 import tech.harmonysoft.oss.leonardo.model.config.LeonardoConfigFactory
 import tech.harmonysoft.oss.leonardo.model.data.ChartDataSource
@@ -38,6 +39,7 @@ class ChartFragment : Fragment() {
             initUi(chart, navigator)
 
             val model = createModel()
+            ModelHolder.model = model
             chart.apply(model)
             navigator.apply(model)
             model.setActiveRange(Range(-100L, 100L), navigator)
