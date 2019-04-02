@@ -2,7 +2,10 @@ package tech.harmonysoft.oss.leonardo.view.chart
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.*
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.RectF
 import android.util.AttributeSet
 import android.view.View
 import tech.harmonysoft.oss.leonardo.model.DataPoint
@@ -14,11 +17,8 @@ import tech.harmonysoft.oss.leonardo.model.data.ChartDataSource
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModel
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModelListener
 import tech.harmonysoft.oss.leonardo.model.runtime.DataMapper
-import tech.harmonysoft.oss.leonardo.model.text.TextWrapper
 import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil
 import tech.harmonysoft.oss.leonardo.view.util.RoundedRectangleDrawer
-import tech.harmonysoft.oss.leonardo.view.util.TextSpaceMeasurer
-import tech.harmonysoft.oss.leonardo.view.util.TextWidthMeasurer
 import java.util.*
 import kotlin.collections.ArrayList
 
@@ -42,13 +42,12 @@ class ChartView @JvmOverloads constructor(
      */
     private val dataSources = mutableListOf<ChartDataSource>()
 
-    private lateinit var yLabelWidthMeasurer: TextWidthMeasurer
     private lateinit var config: ChartConfig
     private lateinit var drawSetup: ChartDrawSetup
     private lateinit var model: ChartModel
     private lateinit var drawData: ChartDrawData
 
-    private val mRoundedRectangleDrawer = RoundedRectangleDrawer()
+    private val roundedRectangleDrawer = RoundedRectangleDrawer.INSTANCE
 
     private val modelListener = object : ChartModelListener {
         override fun onRangeChanged(anchor: Any) {
@@ -98,40 +97,32 @@ class ChartView @JvmOverloads constructor(
         }
     }
 
-    private lateinit var mChartConfig: ChartConfig
-    private var mConfigApplied = false
+    private var lastClickVisualX = 0f
+    private var lastClickVisualY = 0f
 
-    private lateinit var mPlotPaint: Paint
-
-    private lateinit var mLegendValuePaint: Paint
-    private lateinit var mLegendValueWidthMeasurer: TextSpaceMeasurer
-    private var mLegendValueHeight: Int = 0
-
-    private var mLastClickVisualX: Float = 0.toFloat()
-    private var mLastClickVisualY: Float = 0.toFloat()
-
-    private var mLegendRect: RectF? = null
+    private var legendRect: RectF? = null
 
     init {
         setOnTouchListener { _, event ->
-            mLastClickVisualX = event.x
-            mLastClickVisualY = event.y
+            lastClickVisualX = event.x
+            lastClickVisualY = event.y
             false
         }
-        setOnClickListener { _ ->
-            val legendRect = mLegendRect
-            if (legendRect != null && ::model.isInitialized && legendRect.contains(mLastClickVisualX,
-                                                                                   mLastClickVisualY)
+        setOnClickListener {
+            val legendRect = legendRect
+            if (legendRect != null
+                && ::model.isInitialized
+                && legendRect.contains(lastClickVisualX, lastClickVisualY)
             ) {
                 model.resetSelection()
                 return@setOnClickListener
             }
 
-            if (!::mChartConfig.isInitialized || !::model.isInitialized || !mChartConfig.selectionAllowed) {
+            if (!::config.isInitialized || !::model.isInitialized || !config.selectionAllowed) {
                 return@setOnClickListener
             }
 
-            model.selectedX = drawData.visualXToDataX(mLastClickVisualX)
+            model.selectedX = drawData.visualXToDataX(lastClickVisualX)
         }
     }
 
@@ -146,27 +137,6 @@ class ChartView @JvmOverloads constructor(
                                      config = config)
             invalidate()
         }
-    }
-
-    private fun applyConfig() {
-        if (mConfigApplied) {
-            return
-        }
-
-        initLegend()
-
-        mConfigApplied = true
-        invalidate()
-    }
-
-    private fun initLegend() {
-        val paint = Paint()
-        paint.typeface = Typeface.DEFAULT
-        paint.textSize = (mChartConfig.yAxisConfig.labelFontSizeInPixels * 3 / 2).toFloat()
-        mLegendValuePaint = paint
-        val fontMetrics = mLegendValuePaint.fontMetrics
-        mLegendValueHeight = (fontMetrics.descent - fontMetrics.ascent).toInt()
-        mLegendValueWidthMeasurer = TextWidthMeasurer(mLegendValuePaint)
     }
 
     fun apply(chartModel: ChartModel) {
@@ -189,7 +159,7 @@ class ChartView @JvmOverloads constructor(
     private fun refreshDataSources() {
         dataSources.clear()
         dataSources.addAll(model.registeredDataSources)
-        dataSources.sortWith(COMPARATOR)
+        dataSources.sortBy { it.legend }
     }
 
     fun scrollHorizontally(deltaVisualX: Float) {
@@ -231,17 +201,13 @@ class ChartView @JvmOverloads constructor(
         if (!::drawSetup.isInitialized || !::drawData.isInitialized) {
             return
         }
-        if (!::yLabelWidthMeasurer.isInitialized) {
-            yLabelWidthMeasurer = TextWidthMeasurer(drawSetup.yLabelPaint)
-        }
 
         drawData.refresh()
 
         drawBackground(canvas)
         drawGrid(canvas)
         drawPlots(canvas)
-        // TODO den uncomment
-//        drawSelection(canvas)
+        drawSelection(canvas)
     }
 
     private fun drawBackground(canvas: Canvas) {
@@ -367,7 +333,7 @@ class ChartView @JvmOverloads constructor(
                                         this.alpha = alpha
                                     })
                 }
-                drawData.maxYLabelWidth = Math.max(drawData.maxYLabelWidth, yLabelWidthMeasurer.measureVisualSpace(label))
+                drawData.onYLabel(label)
             }
 
             value += dataStep
@@ -416,7 +382,7 @@ class ChartView @JvmOverloads constructor(
         var previousVisualPoint: VisualPoint? = null
         var i = 0
         while (!stop && i < points.size) {
-            val point = points.get(i)
+            val point = points[i]
             val visualPoint = drawData.dataPointToVisualPoint(point)
             if (i == 0) {
                 previousVisualPoint = visualPoint
@@ -499,11 +465,11 @@ class ChartView @JvmOverloads constructor(
     }
 
     private fun drawSelection(canvas: Canvas) {
-        if (!mChartConfig.drawSelection || !model.hasSelection) {
+        legendRect = null
+
+        if (!config.drawSelection || !model.hasSelection) {
             return
         }
-
-        mLegendRect = null
 
         val dataX = model.selectedX
         val visualX = drawData.dataXToVisualX(dataX)
@@ -525,8 +491,8 @@ class ChartView @JvmOverloads constructor(
 
             val dataY: Long
 
-            val firstDataPoint = points.get(0)
-            val lastDataPoint = points.get(points.size - 1)
+            val firstDataPoint = points.first()
+            val lastDataPoint = points.last()
             if (dataX < firstDataPoint.x) {
                 val previousDataPoint =
                     model.getPreviousPointForActiveRange(dataSource, dataAnchor) ?: continue
@@ -545,11 +511,11 @@ class ChartView @JvmOverloads constructor(
             } else {
                 var i = Collections.binarySearch(points, DataPoint(dataX, 0), DataPoint.COMPARATOR_BY_X)
                 if (i >= 0) {
-                    dataY = points.get(i).y
+                    dataY = points[i].y
                 } else {
                     i = -(i + 1)
-                    val prev = points.get(i - 1)
-                    val next = points.get(i)
+                    val prev = points[i - 1]
+                    val next = points[i]
                     val formula = calculateLineFormula(VisualPoint(prev.x.toFloat(), prev.y.toFloat()),
                                                        VisualPoint(next.x.toFloat(), next.y.toFloat()))
                     dataY = Math.round(formula.getY(dataX.toFloat()).toDouble())
@@ -559,7 +525,7 @@ class ChartView @JvmOverloads constructor(
             val visualPoint = drawData.dataPointToVisualPoint(DataPoint(dataX, dataY))
             dataSource2yInfo[dataSource] =
                 ValueInfo(dataY, visualPoint.y)
-            val yShift = mChartConfig.plotLineWidthInPixels / 2
+            val yShift = config.plotLineWidthInPixels / 2
             drawSelectionPlotSign(canvas,
                                   VisualPoint(visualPoint.x, visualPoint.y - yShift),
                                   dataSource.color)
@@ -569,13 +535,15 @@ class ChartView @JvmOverloads constructor(
     }
 
     private fun drawSelectionPlotSign(canvas: Canvas, point: VisualPoint, color: Int) {
-        mPlotPaint.color = mChartConfig.backgroundColor
-        mPlotPaint.style = Paint.Style.FILL
-        canvas.drawCircle(point.x, point.y, mChartConfig.selectionSignRadiusInPixels.toFloat(), mPlotPaint)
+        val paint = drawSetup.plotPaint.apply {
+            this.color = config.backgroundColor
+            style = Paint.Style.FILL
+        }
+        canvas.drawCircle(point.x, point.y, config.selectionSignRadiusInPixels.toFloat(), paint)
 
-        mPlotPaint.color = color
-        mPlotPaint.style = Paint.Style.STROKE
-        canvas.drawCircle(point.x, point.y, mChartConfig.selectionSignRadiusInPixels.toFloat(), mPlotPaint)
+        paint.color = color
+        paint.style = Paint.Style.STROKE
+        canvas.drawCircle(point.x, point.y, config.selectionSignRadiusInPixels.toFloat(), paint)
     }
 
     private fun drawSelectionLegend(canvas: Canvas, x: Float, dataSource2yInfo: Map<ChartDataSource, ValueInfo>) {
@@ -596,7 +564,7 @@ class ChartView @JvmOverloads constructor(
 
         val legendTitle = config.xAxisConfig.labelTextStrategy.getLabel(model.selectedX,
                                                                         drawData.xAxis.axisStep)
-        val legendTitleWidth = yLabelWidthMeasurer.measureVisualSpace(legendTitle)
+        val legendTitleWidth = drawData.getLegendValueWidth(legendTitle)
         if (legendTitleWidth + context.horizontalPadding * 2 > width) {
             context.tooNarrow = true
             return true
@@ -632,8 +600,8 @@ class ChartView @JvmOverloads constructor(
             } else {
                 config.yAxisConfig.labelTextStrategy.getLabel(dataY, drawData.yAxis.axisStep)
             }
-            val valueWidth = mLegendValueWidthMeasurer.measureVisualSpace(value)
-            val legendWidth = yLabelWidthMeasurer.measureVisualSpace(dataSource.legend)
+            val valueWidth = drawData.getLegendValueWidth(value)
+            val legendWidth = drawData.getYLabelWidth(dataSource.legend)
             legendTextWidth += Math.max(valueWidth, legendWidth)
             if (first) {
                 first = false
@@ -652,8 +620,8 @@ class ChartView @JvmOverloads constructor(
     private fun fillLegendInternalVerticalData(context: LegendDrawContext): Boolean {
         context.verticalPadding = drawData.yAxis.labelHeight
         context.titleYShift = context.verticalPadding + drawData.yAxis.labelHeight
-        context.valueYShift = context.titleYShift + mLegendValueHeight * 2
-        context.legendYShift = context.valueYShift + drawData.yAxis.labelHeight * 2 / 3 + drawData.yAxis.labelHeight
+        context.valueYShift = context.titleYShift + drawData.legendLabelHeight * 2
+        context.legendYShift = context.valueYShift + drawData.yAxis.labelHeight * 5 / 2
         context.legendHeight = context.legendYShift + context.verticalPadding
         return context.legendHeight <= height
     }
@@ -666,7 +634,7 @@ class ChartView @JvmOverloads constructor(
         for (valueInfo in dataSource2yInfo.values) {
             selectionYs.add(valueInfo.visualValue)
         }
-        Collections.sort(selectionYs)
+        selectionYs.sort()
 
         var topLimit = 0f
         var legendTop = -1f
@@ -738,29 +706,25 @@ class ChartView @JvmOverloads constructor(
                          context.topOnChart,
                          context.leftOnChart + context.legendWidth,
                          context.topOnChart + context.legendHeight)
-        mLegendRect = rect
+        legendRect = rect
 
-        mRoundedRectangleDrawer.draw(rect,
-                                     { drawSetup.gridPaint },
-                                     { drawSetup.legendBackgroundPaint },
-                                     LeonardoUtil.DEFAULT_CORNER_RADIUS,
-                                     canvas)
+        roundedRectangleDrawer.draw(rect,
+                                    { drawSetup.gridPaint },
+                                    { drawSetup.legendBackgroundPaint },
+                                    LeonardoUtil.DEFAULT_CORNER_RADIUS,
+                                    canvas)
         drawLegendTitle(canvas, context)
         drawLegendValues(canvas, context)
     }
 
     private fun drawLegendTitle(canvas: Canvas, context: LegendDrawContext) {
-        val paint = drawSetup.yLabelPaint.apply {
-            color = mChartConfig.legendTextTitleColor
-        }
-        val xText = config.xAxisConfig.labelTextStrategy.getLabel(model.selectedX,
-                                                                  drawData.xAxis.axisStep)
+        val xText = config.xAxisConfig.labelTextStrategy.getLabel(model.selectedX, drawData.xAxis.axisStep)
         canvas.drawText(xText.data,
                         0,
                         xText.length,
                         context.leftOnChart + context.horizontalPadding,
                         context.topOnChart + context.titleYShift,
-                        paint)
+                        drawSetup.legendTitlePaint)
     }
 
     private fun drawLegendValues(canvas: Canvas, context: LegendDrawContext) {
@@ -771,30 +735,24 @@ class ChartView @JvmOverloads constructor(
             if (!model.isActive(dataSource)) {
                 continue
             }
-            val paint = drawSetup.yLabelPaint.apply {
-                color = dataSource.color
-            }
+
             val valueInfo = context.dataSource2yInfo[dataSource] ?: continue
-            val value: TextWrapper
-            if (context.minifiedValues) {
-                value = drawData.yAxis.valueStrategy.getMinifiedLabel(valueInfo.dataValue, drawData.yAxis.axisStep)
+            val value = if (context.minifiedValues) {
+                drawData.yAxis.valueStrategy.getMinifiedLabel(valueInfo.dataValue, drawData.yAxis.axisStep)
             } else {
-                value = drawData.yAxis.valueStrategy.getLabel(valueInfo.dataValue, drawData.yAxis.axisStep)
+                drawData.yAxis.valueStrategy.getLabel(valueInfo.dataValue, drawData.yAxis.axisStep)
             }
-            mLegendValuePaint.color = dataSource.color
-            canvas.drawText(value.data, 0, value.length, x, valueY, mLegendValuePaint)
+            canvas.drawText(value.data, 0, value.length, x, valueY, drawSetup.legendValuePaint.apply {
+                color = dataSource.color
+            })
 
-            canvas.drawText(dataSource.legend, x, legendY, paint)
+            canvas.drawText(dataSource.legend, x, legendY, drawSetup.yLabelPaint.apply {
+                color = dataSource.color
+            })
 
-            x += Math.max(mLegendValueWidthMeasurer.measureVisualSpace(value),
-                          yLabelWidthMeasurer.measureVisualSpace(dataSource.legend))
+            x += Math.max(drawData.getLegendValueWidth(value), drawData.getYLabelWidth(dataSource.legend))
             x += context.horizontalPadding.toFloat()
         }
-    }
-
-    companion object {
-
-        private val COMPARATOR = Comparator<ChartDataSource> { s1, s2 -> s1.legend.compareTo(s2.legend) }
     }
 
     private data class ValueInfo(val dataValue: Long, val visualValue: Float)
@@ -813,7 +771,7 @@ class ChartView @JvmOverloads constructor(
         var legendYShift: Int = 0
         var legendHeight: Int = 0
 
-        var leftOnChart: Float = 0.toFloat()
-        var topOnChart: Float = 0.toFloat()
+        var leftOnChart: Float = 0f
+        var topOnChart: Float = 0f
     }
 }

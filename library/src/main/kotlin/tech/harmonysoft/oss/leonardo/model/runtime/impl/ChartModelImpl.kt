@@ -27,7 +27,7 @@ class ChartModelImpl(private val bufferPagesCount: Int) : ChartModel {
     private var _hasSelection = false
     private var _selectedX = 0L
 
-    override val hasSelection = _hasSelection
+    override val hasSelection get() = _hasSelection
     override var selectedX: Long
         get() {
             if (!_hasSelection) {

@@ -68,4 +68,21 @@ internal class ChartDrawSetup(private val config: ChartConfig) {
                 alpha = 255
             }
         }
+
+    val legendTitlePaint: Paint
+        get() {
+            return paint.apply {
+                typeface = Typeface.DEFAULT_BOLD
+                style = Paint.Style.FILL
+                color = config.legendTextTitleColor
+            }
+        }
+
+    val legendValuePaint: Paint
+        get() {
+            return paint.apply {
+                typeface = Typeface.DEFAULT
+                textSize = config.yAxisConfig.labelFontSizeInPixels * 3f / 2f
+            }
+        }
 }

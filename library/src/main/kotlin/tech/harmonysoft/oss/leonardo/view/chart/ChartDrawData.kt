@@ -10,6 +10,7 @@ import tech.harmonysoft.oss.leonardo.model.config.chart.ChartConfig
 import tech.harmonysoft.oss.leonardo.model.data.ChartDataSource
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModel
 import tech.harmonysoft.oss.leonardo.model.runtime.DataMapper
+import tech.harmonysoft.oss.leonardo.model.text.TextWrapper
 import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil
 import tech.harmonysoft.oss.leonardo.view.util.*
 import kotlin.math.max
@@ -28,7 +29,7 @@ internal class ChartDrawData(
 
     val xAxis = ChartAxisData(drawSetup.xLabelPaint, config.xAxisConfig, AxisAnimator(view))
     val yAxis = ChartAxisData(drawSetup.yLabelPaint, config.yAxisConfig, AxisAnimator(view))
-    var maxYLabelWidth = 0
+    val legendLabelHeight = TextHeightMeasurer(drawSetup.legendValuePaint).measureVisualSpace("W")
 
     val chartBottom: Int
         get() {
@@ -44,6 +45,8 @@ internal class ChartDrawData(
             return maxYLabelWidth + yAxis.labelPadding
         }
 
+    var maxYLabelWidth = 0
+
     private val drawXLabels = config.xAxisConfig.drawAxis || config.xAxisConfig.drawLabels
     private val animationDataSourceInfo = mutableMapOf<ChartDataSource, DataSourceAnimationContext>()
     private val handler = Handler(Looper.getMainLooper())
@@ -51,7 +54,9 @@ internal class ChartDrawData(
         view.invalidate()
     }
     private val animationEnabled = config.animationEnabled
-    private val xWidthMeasurer = TextWidthMeasurer(drawSetup.xLabelPaint)
+    private val xWidthMeasurer = TextWidthMeasurer { drawSetup.xLabelPaint }
+    private val yWidthMeasurer = TextWidthMeasurer { drawSetup.yLabelPaint }
+    private val legendWidthMeasurer = TextWidthMeasurer { drawSetup.legendValuePaint }
 
     private var forceRefresh = false
 
@@ -82,6 +87,10 @@ internal class ChartDrawData(
         data.range = currentValuesRange
         if (!rescale) {
             return
+        }
+
+        if (yAxis) {
+            maxYLabelWidth = 0
         }
 
         data.availableSize = availableSize
@@ -173,6 +182,17 @@ internal class ChartDrawData(
         return !animationDataSourceInfo.isEmpty()
     }
 
+    fun onYLabel(label: TextWrapper) {
+        maxYLabelWidth = max(maxYLabelWidth, yWidthMeasurer.measureVisualSpace(label))
+    }
+
+    fun getYLabelWidth(label: String): Int {
+        return yWidthMeasurer.measureVisualSpace(label)
+    }
+
+    fun getLegendValueWidth(value: TextWrapper): Int {
+        return legendWidthMeasurer.measureVisualSpace(value)
+    }
 
     fun fadeIn(dataSource: ChartDataSource) {
         animationDataSourceInfo[dataSource] = DataSourceAnimationContext(0, 255)
@@ -220,7 +240,7 @@ internal class ChartDrawData(
 
     fun dataYToVisualY(dataY: Long): Float {
         refresh()
-        return yAxis.availableSize -  if (yAxis.animator.inProgress) {
+        return yAxis.availableSize - if (yAxis.animator.inProgress) {
             yAxis.animator.getVisualValue(dataY)
         } else {
             yAxis.dataValueToVisualValue(dataY)
