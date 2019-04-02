@@ -1,25 +1,24 @@
 package tech.harmonysoft.oss.leonardo.view.chart
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.*
-import android.os.Handler
-import android.os.Looper
 import android.util.AttributeSet
 import android.view.View
 import tech.harmonysoft.oss.leonardo.model.DataPoint
 import tech.harmonysoft.oss.leonardo.model.LineFormula
 import tech.harmonysoft.oss.leonardo.model.Range
-import tech.harmonysoft.oss.leonardo.model.Range.Companion.EMPTY_RANGE
 import tech.harmonysoft.oss.leonardo.model.VisualPoint
-import tech.harmonysoft.oss.leonardo.model.config.axis.AxisConfig
 import tech.harmonysoft.oss.leonardo.model.config.chart.ChartConfig
 import tech.harmonysoft.oss.leonardo.model.data.ChartDataSource
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModel
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModelListener
+import tech.harmonysoft.oss.leonardo.model.runtime.DataMapper
 import tech.harmonysoft.oss.leonardo.model.text.TextWrapper
 import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil
-import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil.ANIMATION_DURATION_MILLIS
-import tech.harmonysoft.oss.leonardo.view.util.*
+import tech.harmonysoft.oss.leonardo.view.util.RoundedRectangleDrawer
+import tech.harmonysoft.oss.leonardo.view.util.TextSpaceMeasurer
+import tech.harmonysoft.oss.leonardo.view.util.TextWidthMeasurer
 import java.util.*
 import kotlin.collections.ArrayList
 
@@ -33,39 +32,27 @@ class ChartView @JvmOverloads constructor(
     defaultStyle: Int = 0
 ) : View(context, attributes, defaultStyle) {
 
+    val dataAnchor: Any = this
+    val dataMapper: DataMapper by lazy {
+        drawData
+    }
+    val xVisualShift: Float
+        get() {
+            return drawData.xAxis.visualShift
+        }
+
     /**
      * Keep own data sources list in order to work with them in lexicographically, e.g. when showing selection legend
      */
     private val dataSources = mutableListOf<ChartDataSource>()
 
+    private lateinit var yLabelWidthMeasurer: TextWidthMeasurer
     private lateinit var config: ChartConfig
     private lateinit var drawSetup: ChartDrawSetup
     private lateinit var model: ChartModel
     private lateinit var drawData: ChartDrawData
 
-    private val axisStepChooser = AxisStepChooser()
-
-    private val mHandler = Handler(Looper.getMainLooper())
-    private val mRedrawTask = {
-        invalidate()
-    }
-
-    private val mAnimationDataSourceInfo = mutableMapOf<ChartDataSource, DataSourceAnimationContext>()
-
-
     private val mRoundedRectangleDrawer = RoundedRectangleDrawer()
-    private val mYAxisGapStrategy = getYLabelGapStrategy {
-        mYAxisLabelVerticalPadding
-    }
-
-    private val chartBottom: Int
-        get() {
-            return if (config.xAxisConfig.drawAxis || config.xAxisConfig.drawLabels) {
-                height - drawData.xAxis.labelHeight - drawData.xAxis.verticalLabelPadding
-            } else {
-                height
-            }
-        }
 
     private val modelListener = object : ChartModelListener {
         override fun onRangeChanged(anchor: Any) {
@@ -75,22 +62,32 @@ class ChartView @JvmOverloads constructor(
         }
 
         override fun onDataSourceEnabled(dataSource: ChartDataSource) {
-            startDataSourceFadeInAnimation(dataSource)
+            if (::config.isInitialized && config.animationEnabled) {
+                drawData.fadeIn(dataSource)
+                invalidate()
+            }
         }
 
         override fun onDataSourceDisabled(dataSource: ChartDataSource) {
-            startDataSourceFadeOutAnimation(dataSource)
+            if (::config.isInitialized && config.animationEnabled) {
+                drawData.fadeOut(dataSource)
+                invalidate()
+            }
         }
 
         override fun onDataSourceAdded(dataSource: ChartDataSource) {
             refreshDataSources()
-            startDataSourceFadeInAnimation(dataSource)
+            if (::config.isInitialized && config.animationEnabled) {
+                drawData.fadeIn(dataSource)
+            }
             invalidate()
         }
 
         override fun onDataSourceRemoved(dataSource: ChartDataSource) {
             refreshDataSources()
-            stopDataSourceFadeAnimation(dataSource)
+            if (::config.isInitialized && config.animationEnabled) {
+                drawData.fadeOut(dataSource)
+            }
             invalidate()
         }
 
@@ -105,50 +102,19 @@ class ChartView @JvmOverloads constructor(
         }
     }
 
-    val xVisualShift: Float
-        get() {
-            return drawData.xAxis.visualShift
-        }
-
-    val dataAnchor: Any get() = this
-
     private lateinit var mChartConfig: ChartConfig
     private var mConfigApplied = false
 
-    private lateinit var mBackgroundPaint: Paint
-    private lateinit var mGridPaint: Paint
     private lateinit var mPlotPaint: Paint
 
     private lateinit var mLegendValuePaint: Paint
     private lateinit var mLegendValueWidthMeasurer: TextSpaceMeasurer
     private var mLegendValueHeight: Int = 0
 
-    private lateinit var mYAxisConfig: AxisConfig
-    private lateinit var mYLabelPaint: Paint
-    private lateinit var mCurrentYRange: Range
-    private lateinit var mYAxisLabelWidthMeasurer: TextSpaceMeasurer
-    private lateinit var mYAxisLabelHeightMeasurer: TextSpaceMeasurer
-    private var mYAxisLabelHeight: Int = 0
-    private var mYAxisLabelHorizontalPadding: Int = 0
-    private var mYAxisLabelVerticalPadding: Int = 0
-    private var mYAxisStep: Long = 0
-    private var mMaxYLabelWidth: Int = 0
-
     private var mLastClickVisualX: Float = 0.toFloat()
     private var mLastClickVisualY: Float = 0.toFloat()
 
     private var mLegendRect: RectF? = null
-
-    private var mYAnimationFirstDataValue: Long = 0
-    private var mYAnimationAxisStep: Long = 0
-    private var mYAnimationInitialUnitHeight: Float = 0.toFloat()
-    private var mYAnimationCurrentUnitHeight: Float = 0.toFloat()
-    private var mYAnimationFinalUnitHeight: Float = 0.toFloat()
-    private var mYAnimationStartTimeMs: Long = 0
-    private var mYAnimationOngoingLabelAlpha: Int = 0
-    private var mYAnimationOngoingGridAlpha: Int = 0
-    private var mYAnimationFinalLabelAlpha: Int = 0
-    private var mYAnimationFinalGridAlpha: Int = 0
 
     init {
         setOnTouchListener { _, event ->
@@ -158,7 +124,9 @@ class ChartView @JvmOverloads constructor(
         }
         setOnClickListener { _ ->
             val legendRect = mLegendRect
-            if (legendRect != null && ::model.isInitialized && legendRect.contains(mLastClickVisualX, mLastClickVisualY)) {
+            if (legendRect != null && ::model.isInitialized && legendRect.contains(mLastClickVisualX,
+                                                                                   mLastClickVisualY)
+            ) {
                 model.resetSelection()
                 return@setOnClickListener
             }
@@ -167,7 +135,7 @@ class ChartView @JvmOverloads constructor(
                 return@setOnClickListener
             }
 
-            model.selectedX = visualXToDataX(mLastClickVisualX)
+            model.selectedX = drawData.visualXToDataX(mLastClickVisualX)
         }
     }
 
@@ -177,11 +145,9 @@ class ChartView @JvmOverloads constructor(
         if (::model.isInitialized) {
             drawData = ChartDrawData(drawSetup = drawSetup,
                                      view = this,
-                                     xLabelStrategy = config.xAxisConfig.labelTextStrategy,
-                                     yLabelStrategy = config.yAxisConfig.labelTextStrategy,
                                      model = model,
                                      dataAnchor = dataAnchor,
-                                     animationEnabled = config.animationEnabled)
+                                     config = config)
             invalidate()
         }
     }
@@ -191,21 +157,10 @@ class ChartView @JvmOverloads constructor(
             return
         }
 
-        initBackground()
         initLegend()
-        initGrid()
-        initYAxis()
-        initPlot()
 
         mConfigApplied = true
         invalidate()
-    }
-
-    private fun initBackground() {
-        val paint = Paint()
-        paint.color = mChartConfig.backgroundColor
-        paint.style = Paint.Style.FILL
-        mBackgroundPaint = paint
     }
 
     private fun initLegend() {
@@ -218,39 +173,6 @@ class ChartView @JvmOverloads constructor(
         mLegendValueWidthMeasurer = TextWidthMeasurer(mLegendValuePaint)
     }
 
-    private fun initGrid() {
-        val paint = Paint()
-        paint.color = mChartConfig.gridColor
-        paint.style = Paint.Style.STROKE
-        paint.strokeWidth = mChartConfig.gridLineWidthInPixels.toFloat()
-        mGridPaint = paint
-    }
-
-    private fun initYAxis() {
-        mYAxisConfig = mChartConfig.yAxisConfig
-        mYLabelPaint = getAxisLabelPaint(mChartConfig.yAxisConfig)
-        mYAxisLabelWidthMeasurer = TextWidthMeasurer(mYLabelPaint)
-        mYAxisLabelHeightMeasurer = TextHeightMeasurer(mYLabelPaint)
-        val fontMetrics = mYLabelPaint.getFontMetrics()
-        mYAxisLabelHeight = (fontMetrics.descent - fontMetrics.ascent).toInt()
-        mYAxisLabelVerticalPadding = mYAxisLabelHeight * 3 / 5
-        mYAxisLabelHorizontalPadding = mYAxisLabelVerticalPadding
-    }
-
-    private fun getAxisLabelPaint(config: AxisConfig): Paint {
-        val paint = Paint()
-        paint.color = config.labelColor
-        paint.typeface = Typeface.DEFAULT
-        paint.textSize = config.labelFontSizeInPixels.toFloat()
-        return paint
-    }
-
-    private fun initPlot() {
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-        paint.strokeWidth = mChartConfig.plotLineWidthInPixels.toFloat()
-        mPlotPaint = paint
-    }
-
     fun apply(chartModel: ChartModel) {
         if (::model.isInitialized && model !== chartModel) {
             model.removeListener(modelListener)
@@ -260,11 +182,9 @@ class ChartView @JvmOverloads constructor(
         if (::config.isInitialized) {
             drawData = ChartDrawData(drawSetup = drawSetup,
                                      view = this,
-                                     xLabelStrategy = config.xAxisConfig.labelTextStrategy,
-                                     yLabelStrategy = config.yAxisConfig.labelTextStrategy,
                                      model = model,
                                      dataAnchor = dataAnchor,
-                                     animationEnabled = config.animationEnabled)
+                                     config = config)
         }
         refreshDataSources()
         invalidate()
@@ -276,68 +196,9 @@ class ChartView @JvmOverloads constructor(
         dataSources.sortWith(COMPARATOR)
     }
 
-    // TODO den remove
-    fun getChartLeft(): Int {
-        return 0
-    }
-
-    // TODO den remove
-    fun getChartRight(): Int {
-        return width
-    }
-
-    // TODO den remove
-    fun getChartTop(): Int {
-        return 0
-    }
-
-    // TODO den remove
-    fun getChartHeight(): Int {
-        return height
-    }
-
-    // TODO den remove
-    fun getPlotLeft(): Int {
-        return getChartLeft() + mMaxYLabelWidth + mYAxisLabelHorizontalPadding
-    }
-
-    // TODO den remove
-    fun getPlotRight(): Int {
-        return getChartRight()
-    }
-
-    fun dataPointToVisualPoint(point: DataPoint): VisualPoint {
-        var yRange: Range? = mCurrentYRange
-        if (yRange == null) {
-            yRange = getCurrentYRange()
-        }
-
-        val yUnitHeight: Float
-        if (isYRescaleAnimationInProgress()) {
-            yUnitHeight = mYAnimationCurrentUnitHeight
-        } else {
-            yUnitHeight = getChartHeight() / yRange.size.toFloat()
-        }
-
-        val y = chartBottom - (point.y - yRange.start) * yUnitHeight
-
-        return VisualPoint(dataXToVisualX(point.x), y)
-    }
-
-    fun dataXToVisualX(dataX: Long): Float {
-        drawData.refresh(width, height)
-        return getChartLeft() + xVisualShift + (dataX - drawData.xAxis.range.start) * drawData.xAxis.unitSize
-    }
-
-    fun visualXToDataX(visualX: Float): Long {
-        drawData.refresh(width, height)
-        return ((visualX - getChartLeft().toFloat() - xVisualShift)
-                / drawData.xAxis.unitSize + drawData.xAxis.range.start).toLong()
-    }
-
     fun scrollHorizontally(deltaVisualX: Float) {
-        val effectiveDeltaVisualX = deltaVisualX + xVisualShift
-        drawData.refresh(width, height)
+        val effectiveDeltaVisualX = deltaVisualX + drawData.xAxis.visualShift
+        drawData.refresh()
         val currentXRange = drawData.xAxis.range
         val deltaDataX = (-effectiveDeltaVisualX / drawData.xAxis.unitSize).toLong()
 
@@ -369,17 +230,21 @@ class ChartView @JvmOverloads constructor(
         setMeasuredDimension(edge, edge)
     }
 
+    @SuppressLint("DrawAllocation")
     override fun onDraw(canvas: Canvas) {
         if (!::drawSetup.isInitialized || !::drawData.isInitialized) {
             return
         }
+        if (!::yLabelWidthMeasurer.isInitialized) {
+            yLabelWidthMeasurer = TextWidthMeasurer(drawSetup.yLabelPaint)
+        }
 
-        drawData.refresh(width, height)
+        drawData.refresh()
 
         drawBackground(canvas)
         drawGrid(canvas)
+        drawPlots(canvas)
         // TODO den uncomment
-//        drawPlots(canvas)
 //        drawSelection(canvas)
     }
 
@@ -391,7 +256,7 @@ class ChartView @JvmOverloads constructor(
 
     private fun drawGrid(canvas: Canvas) {
         drawXAxis(canvas)
-//        drawYAxis(canvas)
+        drawYAxis(canvas)
     }
 
     private fun drawXAxis(canvas: Canvas) {
@@ -403,7 +268,7 @@ class ChartView @JvmOverloads constructor(
         if (!config.xAxisConfig.drawAxis) {
             return
         }
-        val y = chartBottom.toFloat()
+        val y = drawData.chartBottom.toFloat()
         val clipBounds = canvas.clipBounds
         if (y <= clipBounds.bottom) {
             canvas.drawLine(0f, y, width.toFloat(), y, drawSetup.gridPaint)
@@ -423,19 +288,20 @@ class ChartView @JvmOverloads constructor(
 
         if (drawData.xAxis.animator.inProgress) {
             with(drawData.xAxis.animator) {
-                drawXAxisLabels(canvas, initialAxisRange, initialAxisStep, axisUnitSize, initialStepAlpha)
+                drawXAxisLabels(canvas, rangeFrom, initialStep, initialStepAlpha)
             }
             with(drawData.xAxis) {
-                drawXAxisLabels(canvas, range, axisStep, unitSize, drawData.xAxis.animator.finalStepAlpha)
+                drawXAxisLabels(canvas, range, axisStep, drawData.xAxis.animator.finalStepAlpha)
             }
         } else {
             with(drawData.xAxis) {
-                drawXAxisLabels(canvas, range, axisStep, unitSize, 255)
+                drawXAxisLabels(canvas, range, axisStep, 255)
             }
         }
     }
 
-    private fun drawXAxisLabels(canvas: Canvas, range: Range, step: Long, unitWidth: Float, alpha: Int) {
+    private fun drawXAxisLabels(canvas: Canvas, range: Range, step: Long, alpha: Int) {
+        val unitWidth = width.toFloat() / range.size
         val labelTextStrategy = config.xAxisConfig.labelTextStrategy
         val paint = drawSetup.xLabelPaint.apply { this.alpha = alpha }
         var value = range.findFirstStepValue(step)
@@ -449,159 +315,69 @@ class ChartView @JvmOverloads constructor(
     }
 
     private fun drawYAxis(canvas: Canvas) {
-        refreshYAxisSetupIfNecessary()
         drawYGrid(canvas)
     }
 
-    private fun refreshYAxisSetupIfNecessary() {
-        val previousRange = if (::mCurrentYRange.isInitialized) mCurrentYRange else null
-        val currentYRange = getCurrentYRange()
-        if (currentYRange === EMPTY_RANGE) {
-            mCurrentYRange = currentYRange
-            return
-        }
-
-        var rescale = false
-        if (!::mCurrentYRange.isInitialized || mCurrentYRange.size != currentYRange.size) {
-            rescale = true
-        }
-
-        mCurrentYRange = currentYRange
-
-        if (rescale) {
-            val labelTextStrategy = mYAxisConfig.labelTextStrategy
-            val nonPaddedRange = getCurrentYRange(false)
-            val newYAxisStep = axisStepChooser.choose(labelTextStrategy,
-                                                      mYAxisGapStrategy,
-                                                      nonPaddedRange,
-                                                      getChartHeight(),
-                                                      mYAxisLabelHeightMeasurer)
-
-            val currentRange = mayBeExpandYRange(nonPaddedRange)
-            val unitHeight = getChartHeight() / currentRange.size.toFloat()
-            val previousStep = mYAxisStep
-
-            mYAxisStep = newYAxisStep
-            mCurrentYRange = mayBeExpandYRange(nonPaddedRange)
-
-            if (isYRescaleAnimationInProgress()) {
-                if (unitHeight != mYAnimationFinalUnitHeight) {
-                    startYRescaleAnimation(previousRange, previousStep, mCurrentYRange)
-                }
-            } else if (previousRange != null && previousStep > 0 && !previousRange.equals(currentRange)) {
-                startYRescaleAnimation(previousRange, previousStep, mCurrentYRange)
-            }
-        }
-    }
-
-    private fun getCurrentYRange(): Range {
-        return getCurrentYRange(true)
-    }
-
-    private fun getCurrentYRange(padByStepSize: Boolean): Range {
-        var min = Long.MAX_VALUE
-        var max = Long.MIN_VALUE
-        for (dataSource in dataSources) {
-            if (!model.isActive(dataSource)) {
-                continue
-            }
-
-            if (model.arePointsForActiveRangeLoaded(dataSource, dataAnchor)) {
-                val interval = model.getCurrentRangePoints(dataSource, dataAnchor)
-                for (point in interval) {
-                    if (min > point.y) {
-                        min = point.y
-                    }
-                    if (max < point.y) {
-                        max = point.y
-                    }
-                }
-            }
-        }
-
-        if (min > max) {
-            return EMPTY_RANGE
-        }
-
-        val range = Range(min, max)
-        return if (padByStepSize) {
-            mayBeExpandYRange(range)
-        } else {
-            range
-        }
-    }
-
-    /**
-     * There is a possible case that current Y range is not divisible by step size, e.g. current range
-     * is `[4; 24]` and current step is `10`. We want to expand the range to `[0; 30]` then
-     * in order to draw Y axis labels through the same intervals.
-     *
-     * @param range Y range to process
-     * @return Y range to use
-     */
-    private fun mayBeExpandYRange(range: Range): Range {
-        return if (mYAxisStep <= 0 || !mYAxisConfig.drawAxis) {
-            range
-        } else range.padBy(mYAxisStep)
-    }
-
     private fun drawYGrid(canvas: Canvas) {
-        if (!mYAxisConfig.drawAxis || mCurrentYRange === EMPTY_RANGE) {
-            mMaxYLabelWidth = 0
+        if (!config.yAxisConfig.drawAxis || drawData.yAxis.range.empty) {
             return
         }
 
-        mYLabelPaint.setColor(mYAxisConfig.labelColor)
-        mYLabelPaint.setTypeface(Typeface.DEFAULT)
-
-        if (isYRescaleAnimationInProgress()) {
-            drawYGrid(canvas,
-                      mYAnimationFirstDataValue,
-                      mYAnimationAxisStep,
-                      mYAnimationCurrentUnitHeight,
-                      mYAnimationOngoingGridAlpha,
-                      mYAnimationOngoingLabelAlpha)
-            drawYGrid(canvas,
-                      mCurrentYRange.findFirstStepValue(mYAxisStep),
-                      mYAxisStep,
-                      getChartHeight() / mCurrentYRange.size.toFloat(),
-                      mYAnimationFinalGridAlpha,
-                      mYAnimationFinalLabelAlpha)
+        if (drawData.yAxis.animator.inProgress) {
+            with(drawData.yAxis.animator) {
+                drawYGrid(canvas, rangeFrom, initialStep, initialStepAlpha)
+            }
+            with(drawData.yAxis) {
+                drawYGrid(canvas, range, axisStep, animator.finalStepAlpha)
+            }
         } else {
-            drawYGrid(canvas,
-                      mCurrentYRange.findFirstStepValue(mYAxisStep),
-                      mYAxisStep,
-                      getChartHeight() / mCurrentYRange.size.toFloat(),
-                      255,
-                      255)
+            with(drawData.yAxis) {
+                drawYGrid(canvas, range, axisStep, 255)
+
+            }
         }
     }
 
-    private fun drawYGrid(canvas: Canvas,
-                          firstValue: Long,
-                          dataStep: Long,
-                          unitHeight: Float,
-                          gridAlpha: Int,
-                          labelAlpha: Int) {
-        mGridPaint.setAlpha(gridAlpha)
-        mYLabelPaint.setAlpha(labelAlpha)
+    private fun drawYGrid(canvas: Canvas, range: Range, dataStep: Long, alpha: Int) {
+        val drawGrid = alpha > 128
+        val firstValue = range.findFirstStepValue(dataStep)
         var value = firstValue
         while (true) {
-            var y = (chartBottom - unitHeight * (value - mCurrentYRange.start)).toInt()
-            if (y <= getChartTop()) {
+            var y = drawData.dataYToVisualY(value)
+            if (y <= 0) {
                 break
+            } else if (y <= drawData.chartBottom) {
+                if (drawGrid) {
+                    canvas.drawLine(0f,
+                                    y,
+                                    width.toFloat(),
+                                    y,
+                                    drawSetup.gridPaint.apply {
+                                        this.alpha = alpha
+                                    })
+                }
+                val label = drawData.yAxis.valueStrategy.getLabel(value, dataStep)
+                y -= drawData.yAxis.labelPadding
+                if (y - drawData.yAxis.labelHeight <= 0) {
+                    break
+                }
+                if (config.yAxisConfig.drawLabels) {
+                    canvas.drawText(label.data,
+                                    0,
+                                    label.length,
+                                    0f,
+                                    y,
+                                    drawSetup.yLabelPaint.apply {
+                                        this.alpha = alpha
+                                    })
+                }
+                drawData.maxYLabelWidth = Math.max(drawData.maxYLabelWidth, yLabelWidthMeasurer.measureVisualSpace(label))
             }
-            canvas.drawLine(getChartLeft().toFloat(), y.toFloat(), getChartRight().toFloat(), y.toFloat(), mGridPaint)
-            val label = mYAxisConfig.labelTextStrategy.getLabel(value, mYAxisStep)
-            y -= mYAxisLabelVerticalPadding
-            if (y - mYAxisLabelHeight <= getChartTop()) {
-                break
-            }
-            if (mYAxisConfig.drawLabels) {
-                canvas.drawText(label.data, 0, label.length, getChartLeft().toFloat(), y.toFloat(), mYLabelPaint)
-            }
-            mMaxYLabelWidth = Math.max(mMaxYLabelWidth, mYAxisLabelWidthMeasurer.measureVisualSpace(label))
+
             value += dataStep
+            if (value > range.end) {
+                break
+            }
         }
     }
 
@@ -612,22 +388,20 @@ class ChartView @JvmOverloads constructor(
     }
 
     private fun drawPlot(dataSource: ChartDataSource, canvas: Canvas) {
-        mPlotPaint.setColor(dataSource.color)
-        val animationContext = mAnimationDataSourceInfo[dataSource]
-        if (animationContext == null) {
+        val paint = drawSetup.plotPaint.apply {
+            color = dataSource.color
+        }
+        if (!drawData.isAnimationInProgress(dataSource)) {
             if (!model.isActive(dataSource)) {
                 return
-            } else {
-                mPlotPaint.setAlpha(255)
             }
         } else {
-            mPlotPaint.setAlpha(animationContext.currentAlpha)
+            paint.alpha = drawData.getCurrentAlpha(dataSource)
         }
-        mPlotPaint.setStyle(Paint.Style.STROKE)
         val interval = model.getCurrentRangePoints(dataSource, dataAnchor)
 
-        val minX = getPlotLeft().toFloat()
-        val maxX = getPlotRight().toFloat()
+        val minX = drawData.chartLeft.toFloat()
+        val maxX = width.toFloat()
 
         val points = ArrayList<DataPoint>(interval.size + 2)
         val previous = model.getPreviousPointForActiveRange(dataSource, dataAnchor)
@@ -647,7 +421,7 @@ class ChartView @JvmOverloads constructor(
         var i = 0
         while (!stop && i < points.size) {
             val point = points.get(i)
-            val visualPoint = dataPointToVisualPoint(point)
+            val visualPoint = drawData.dataPointToVisualPoint(point)
             if (i == 0) {
                 previousVisualPoint = visualPoint
                 i++
@@ -666,8 +440,8 @@ class ChartView @JvmOverloads constructor(
                 val formula = calculateLineFormula(previousVisualPoint, visualPoint)
                 x = minX
                 y = formula.getY(x)
-                if (y > chartBottom) {
-                    y = chartBottom.toFloat()
+                if (y > drawData.chartBottom) {
+                    y = drawData.chartBottom.toFloat()
                     x = formula.getX(y)
                 }
             } else if (visualPoint.x > maxX) {
@@ -680,8 +454,8 @@ class ChartView @JvmOverloads constructor(
                 val formula = calculateLineFormula(previousVisualPoint, visualPoint)
                 x = maxX
                 y = formula.getY(x)
-                if (y > chartBottom) {
-                    y = chartBottom.toFloat()
+                if (y > drawData.chartBottom) {
+                    y = drawData.chartBottom.toFloat()
                     x = formula.getX(y)
                 }
                 stop = true
@@ -707,8 +481,8 @@ class ChartView @JvmOverloads constructor(
                     val formula = calculateLineFormula(previousVisualPoint, visualPoint)
                     endX = maxX
                     endY = formula.getY(endX)
-                    if (endY > chartBottom) {
-                        endY = chartBottom.toFloat()
+                    if (endY > drawData.chartBottom) {
+                        endY = drawData.chartBottom.toFloat()
                         endX = formula.getX(endY)
                     }
                 }
@@ -719,7 +493,7 @@ class ChartView @JvmOverloads constructor(
             i++
         }
 
-        canvas.drawPath(path, mPlotPaint)
+        canvas.drawPath(path, paint)
     }
 
     private fun calculateLineFormula(p1: VisualPoint, p2: VisualPoint): LineFormula {
@@ -736,12 +510,12 @@ class ChartView @JvmOverloads constructor(
         mLegendRect = null
 
         val dataX = model.selectedX
-        val visualX = dataXToVisualX(dataX)
-        if (visualX < getChartLeft() || visualX > getChartRight()) {
+        val visualX = drawData.dataXToVisualX(dataX)
+        if (visualX < 0f || visualX > width) {
             return
         }
 
-        canvas.drawLine(visualX, chartBottom.toFloat(), visualX, getChartTop().toFloat(), mGridPaint)
+        canvas.drawLine(visualX, drawData.chartBottom.toFloat(), visualX, 0f, drawSetup.gridPaint)
 
         val dataSource2yInfo = HashMap<ChartDataSource, ValueInfo>()
         for (dataSource in dataSources) {
@@ -786,7 +560,7 @@ class ChartView @JvmOverloads constructor(
                 }
             }
 
-            val visualPoint = dataPointToVisualPoint(DataPoint(dataX, dataY))
+            val visualPoint = drawData.dataPointToVisualPoint(DataPoint(dataX, dataY))
             dataSource2yInfo[dataSource] =
                 ValueInfo(dataY, visualPoint.y)
             val yShift = mChartConfig.plotLineWidthInPixels / 2
@@ -822,11 +596,11 @@ class ChartView @JvmOverloads constructor(
         if (context.dataSource2yInfo.isEmpty()) {
             return false
         }
-        context.horizontalPadding = mYAxisLabelHeight * 7 / 5
+        context.horizontalPadding = drawData.yAxis.labelHeight * 7 / 5
 
         val legendTitle = config.xAxisConfig.labelTextStrategy.getLabel(model.selectedX,
                                                                         drawData.xAxis.axisStep)
-        val legendTitleWidth = mYAxisLabelWidthMeasurer.measureVisualSpace(legendTitle)
+        val legendTitleWidth = yLabelWidthMeasurer.measureVisualSpace(legendTitle)
         if (legendTitleWidth + context.horizontalPadding * 2 > width) {
             context.tooNarrow = true
             return true
@@ -858,12 +632,12 @@ class ChartView @JvmOverloads constructor(
             val valueInfo = context.dataSource2yInfo[dataSource] ?: continue
             val dataY = valueInfo.dataValue
             val value = if (minifyValues) {
-                mYAxisConfig.labelTextStrategy.getMinifiedLabel(dataY, mYAxisStep)
+                config.yAxisConfig.labelTextStrategy.getMinifiedLabel(dataY, drawData.yAxis.axisStep)
             } else {
-                mYAxisConfig.labelTextStrategy.getLabel(dataY, mYAxisStep)
+                config.yAxisConfig.labelTextStrategy.getLabel(dataY, drawData.yAxis.axisStep)
             }
             val valueWidth = mLegendValueWidthMeasurer.measureVisualSpace(value)
-            val legendWidth = mYAxisLabelWidthMeasurer.measureVisualSpace(dataSource.legend)
+            val legendWidth = yLabelWidthMeasurer.measureVisualSpace(dataSource.legend)
             legendTextWidth += Math.max(valueWidth, legendWidth)
             if (first) {
                 first = false
@@ -880,10 +654,10 @@ class ChartView @JvmOverloads constructor(
     }
 
     private fun fillLegendInternalVerticalData(context: LegendDrawContext): Boolean {
-        context.verticalPadding = mYAxisLabelHeight
-        context.titleYShift = context.verticalPadding + mYAxisLabelHeight
+        context.verticalPadding = drawData.yAxis.labelHeight
+        context.titleYShift = context.verticalPadding + drawData.yAxis.labelHeight
         context.valueYShift = context.titleYShift + mLegendValueHeight * 2
-        context.legendYShift = context.valueYShift + mYAxisLabelHeight * 2 / 3 + mYAxisLabelHeight
+        context.legendYShift = context.valueYShift + drawData.yAxis.labelHeight * 2 / 3 + drawData.yAxis.labelHeight
         context.legendHeight = context.legendYShift + context.verticalPadding
         return context.legendHeight <= height
     }
@@ -909,7 +683,7 @@ class ChartView @JvmOverloads constructor(
             }
         }
 
-        if (context.legendHeight + context.verticalPadding * 2 <= chartBottom - topLimit) {
+        if (context.legendHeight + context.verticalPadding * 2 <= drawData.chartBottom - topLimit) {
             legendTop = topLimit + context.verticalPadding
         }
 
@@ -957,10 +731,10 @@ class ChartView @JvmOverloads constructor(
     }
 
     private fun normalizeLeft(left: Float, width: Float): Float {
-        val xToShiftLeft = left + width - getChartRight()
+        val xToShiftLeft = left + width - this.width
         return if (xToShiftLeft <= 0) {
             left
-        } else Math.max(getChartLeft().toFloat(), left - xToShiftLeft)
+        } else Math.max(0f, left - xToShiftLeft)
     }
 
     private fun doDrawLegend(canvas: Canvas, context: LegendDrawContext) {
@@ -970,10 +744,9 @@ class ChartView @JvmOverloads constructor(
                          context.topOnChart + context.legendHeight)
         mLegendRect = rect
 
-        mBackgroundPaint.color = mChartConfig.legendBackgroundColor
         mRoundedRectangleDrawer.draw(rect,
-                                     mGridPaint,
-                                     mBackgroundPaint,
+                                     { drawSetup.gridPaint },
+                                     { drawSetup.legendBackgroundPaint },
                                      LeonardoUtil.DEFAULT_CORNER_RADIUS,
                                      canvas)
         drawLegendTitle(canvas, context)
@@ -981,8 +754,9 @@ class ChartView @JvmOverloads constructor(
     }
 
     private fun drawLegendTitle(canvas: Canvas, context: LegendDrawContext) {
-        mYLabelPaint.typeface = TYPEFACE_BOLD
-        mYLabelPaint.color = mChartConfig.legendTextTitleColor
+        val paint = drawSetup.yLabelPaint.apply {
+            color = mChartConfig.legendTextTitleColor
+        }
         val xText = config.xAxisConfig.labelTextStrategy.getLabel(model.selectedX,
                                                                   drawData.xAxis.axisStep)
         canvas.drawText(xText.data,
@@ -990,173 +764,39 @@ class ChartView @JvmOverloads constructor(
                         xText.length,
                         context.leftOnChart + context.horizontalPadding,
                         context.topOnChart + context.titleYShift,
-                        mYLabelPaint)
+                        paint)
     }
 
     private fun drawLegendValues(canvas: Canvas, context: LegendDrawContext) {
         var x = context.leftOnChart + context.horizontalPadding
         val valueY = context.topOnChart + context.valueYShift
         val legendY = context.topOnChart + context.legendYShift
-        mYLabelPaint.typeface = Typeface.DEFAULT
         for (dataSource in dataSources) {
             if (!model.isActive(dataSource)) {
                 continue
             }
+            val paint = drawSetup.yLabelPaint.apply {
+                color = dataSource.color
+            }
             val valueInfo = context.dataSource2yInfo[dataSource] ?: continue
             val value: TextWrapper
             if (context.minifiedValues) {
-                value = mYAxisConfig.labelTextStrategy.getMinifiedLabel(valueInfo.dataValue, mYAxisStep)
+                value = drawData.yAxis.valueStrategy.getMinifiedLabel(valueInfo.dataValue, drawData.yAxis.axisStep)
             } else {
-                value = mYAxisConfig.labelTextStrategy.getLabel(valueInfo.dataValue, mYAxisStep)
+                value = drawData.yAxis.valueStrategy.getLabel(valueInfo.dataValue, drawData.yAxis.axisStep)
             }
             mLegendValuePaint.color = dataSource.color
             canvas.drawText(value.data, 0, value.length, x, valueY, mLegendValuePaint)
 
-            mYLabelPaint.color = dataSource.color
-            canvas.drawText(dataSource.legend, x, legendY, mYLabelPaint)
+            canvas.drawText(dataSource.legend, x, legendY, paint)
 
             x += Math.max(mLegendValueWidthMeasurer.measureVisualSpace(value),
-                          mYAxisLabelWidthMeasurer.measureVisualSpace(dataSource.legend))
+                          yLabelWidthMeasurer.measureVisualSpace(dataSource.legend))
             x += context.horizontalPadding.toFloat()
         }
     }
 
-    private fun mayBeTickAnimations() {
-        val hasActiveAnimation = tickYRescaleAnimation() or tickDataSourceFadeAnimation()
-        if (hasActiveAnimation) {
-            mHandler.postDelayed(mRedrawTask, LeonardoUtil.ANIMATION_TICK_FREQUENCY_MILLIS)
-        }
-    }
-
-    private fun isYRescaleAnimationInProgress(): Boolean {
-        return mYAnimationStartTimeMs > 0 && mYAnimationFirstDataValue != java.lang.Long.MIN_VALUE
-    }
-
-    private fun startYRescaleAnimation(rangeFrom: Range?, stepFrom: Long, rangeTo: Range) {
-        if (!mChartConfig.animationEnabled) {
-            return
-        }
-
-        mYAnimationStartTimeMs = System.currentTimeMillis()
-        mYAnimationFirstDataValue = rangeFrom!!.findFirstStepValue(stepFrom)
-        mYAnimationAxisStep = stepFrom
-        mYAnimationInitialUnitHeight = getChartHeight() / rangeFrom.size.toFloat()
-        mYAnimationCurrentUnitHeight = mYAnimationInitialUnitHeight
-        mYAnimationFinalUnitHeight = getChartHeight() / rangeTo.size.toFloat()
-        mYAnimationOngoingGridAlpha = 255
-        mYAnimationOngoingLabelAlpha = 255
-        mYAnimationFinalLabelAlpha = 0
-        mYAnimationFinalGridAlpha = 0
-
-        invalidate()
-    }
-
-    private fun tickYRescaleAnimation(): Boolean {
-        if (!isYRescaleAnimationInProgress()) {
-            return false
-        }
-
-        val animationEndTime = mYAnimationStartTimeMs + ANIMATION_DURATION_MILLIS
-        val now = System.currentTimeMillis()
-        if (now >= animationEndTime) {
-            stopYRescaleAnimation()
-            return false
-        }
-
-        val unitHeightDelta = mYAnimationFinalUnitHeight - mYAnimationInitialUnitHeight
-        val tickUnitHeightChange = (now - mYAnimationStartTimeMs) * unitHeightDelta / ANIMATION_DURATION_MILLIS
-        mYAnimationCurrentUnitHeight = mYAnimationInitialUnitHeight + tickUnitHeightChange
-
-        updateAnimationLabelAlpha()
-        updateAnimationGridAlpha()
-
-        return true
-    }
-
-    private fun updateAnimationLabelAlpha() {
-        val ongoingLabelFadeDuration = ANIMATION_DURATION_MILLIS * 2 / 3
-        val ongoingLabelFadeStartTime = mYAnimationStartTimeMs + ANIMATION_DURATION_MILLIS - ongoingLabelFadeDuration
-        val now = System.currentTimeMillis()
-        if (now <= ongoingLabelFadeStartTime) {
-            mYAnimationOngoingLabelAlpha = 255
-            mYAnimationFinalLabelAlpha = 0
-            return
-        }
-        mYAnimationFinalLabelAlpha = ((now - ongoingLabelFadeStartTime) * 255 / ongoingLabelFadeDuration).toInt()
-        mYAnimationOngoingLabelAlpha = 255 - mYAnimationFinalLabelAlpha
-    }
-
-    private fun updateAnimationGridAlpha() {
-        val switchTime = mYAnimationStartTimeMs + ANIMATION_DURATION_MILLIS * 2 / 3
-        if (System.currentTimeMillis() >= switchTime) {
-            mYAnimationOngoingGridAlpha = 255
-            mYAnimationFinalGridAlpha = 0
-        } else {
-            mYAnimationOngoingGridAlpha = 0
-            mYAnimationFinalGridAlpha = 255
-        }
-    }
-
-    private fun stopYRescaleAnimation() {
-        mYAnimationStartTimeMs = -1
-        mYAnimationFirstDataValue = -1
-        mYAnimationAxisStep = -1
-        mYAnimationInitialUnitHeight = -1f
-        mYAnimationCurrentUnitHeight = -1f
-        mYAnimationFinalUnitHeight = -1f
-        invalidate()
-    }
-
-    private fun startDataSourceFadeInAnimation(dataSource: ChartDataSource) {
-        // TODO den uncomment
-//        if (!mChartConfig.animationEnabled) {
-//            return
-//        }
-//        mAnimationDataSourceInfo[dataSource] =
-//            DataSourceAnimationContext(0, 255)
-        invalidate()
-    }
-
-    private fun startDataSourceFadeOutAnimation(dataSource: ChartDataSource) {
-        // TODO den uncomment
-//        if (!mChartConfig.animationEnabled) {
-//            return
-//        }
-//        mAnimationDataSourceInfo[dataSource] =
-//            DataSourceAnimationContext(255, 0)
-        invalidate()
-    }
-
-    private fun tickDataSourceFadeAnimation(): Boolean {
-        val toRemove = HashSet<ChartDataSource>()
-        val now = System.currentTimeMillis()
-        for ((key, context) in mAnimationDataSourceInfo) {
-            if (now >= context.startTimeMs + ANIMATION_DURATION_MILLIS) {
-                toRemove.add(key)
-                break
-            }
-
-            val elapsedTimeMs = now - context.startTimeMs
-            val totalAlphaDelta = context.finalAlpha - context.initialAlpha
-            val currentAlphaDelta = elapsedTimeMs * totalAlphaDelta / ANIMATION_DURATION_MILLIS
-            context.currentAlpha = (context.initialAlpha + currentAlphaDelta).toInt()
-            if (totalAlphaDelta > 0 && context.currentAlpha >= context.finalAlpha || totalAlphaDelta < 0 && context.currentAlpha <= context.finalAlpha) {
-                toRemove.add(key)
-            }
-        }
-        for (dataSource in toRemove) {
-            stopDataSourceFadeAnimation(dataSource)
-        }
-        return !mAnimationDataSourceInfo.isEmpty()
-    }
-
-    private fun stopDataSourceFadeAnimation(dataSource: ChartDataSource) {
-        mAnimationDataSourceInfo.remove(dataSource)
-    }
-
     companion object {
-
-        private val TYPEFACE_BOLD = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
 
         private val COMPARATOR = Comparator<ChartDataSource> { s1, s2 -> s1.legend.compareTo(s2.legend) }
     }
@@ -1179,16 +819,5 @@ class ChartView @JvmOverloads constructor(
 
         var leftOnChart: Float = 0.toFloat()
         var topOnChart: Float = 0.toFloat()
-    }
-
-    private class DataSourceAnimationContext(val initialAlpha: Int, val finalAlpha: Int) {
-
-        val startTimeMs = System.currentTimeMillis()
-
-        var currentAlpha: Int = 0
-
-        init {
-            currentAlpha = initialAlpha
-        }
     }
 }

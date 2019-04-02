@@ -41,14 +41,14 @@ data class Range(val start: Long, val end: Long) {
         val startToUse = when {
             startToPad > 0 -> start - startToPad
             startToPad < 0 -> start - (padSize + startToPad)
-            else -> start
+            else -> start - padSize
         }
 
         val endToPad = end % padSize
         val endToUse = when {
             endToPad > 0 -> end + (padSize - endToPad)
             endToPad < 0 -> end - endToPad
-            else -> end
+            else -> end + padSize
         }
 
         return if (startToUse == start && endToUse == end) {

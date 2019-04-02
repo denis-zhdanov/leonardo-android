@@ -12,7 +12,7 @@ import tech.harmonysoft.oss.leonardo.view.util.RoundedRectangleDrawer
  * @author Denis Zhdanov
  * @since 31/3/19
  */
-class CheckBoxView  @JvmOverloads constructor(
+class CheckBoxView @JvmOverloads constructor(
     context: Context,
     attributes: AttributeSet? = null,
     defaultStyle: Int = 0
@@ -51,7 +51,7 @@ class CheckBoxView  @JvmOverloads constructor(
 
         paint.color = color
         paint.style = Paint.Style.FILL
-        roundedRectangleDrawer.draw(bounds, paint, paint, radius, canvas)
+        roundedRectangleDrawer.draw(bounds, { paint }, { paint }, radius, canvas)
 
         paint.color = Color.WHITE
         paint.style = Paint.Style.STROKE

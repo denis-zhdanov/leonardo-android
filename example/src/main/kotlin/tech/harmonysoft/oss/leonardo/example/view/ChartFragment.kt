@@ -78,12 +78,12 @@ class ChartFragment : Fragment() {
         model.addDataSource(ChartDataSource("second",
                                             ResourcesCompat.getColor(resources, R.color.plot2, null),
                                             InfiniteChartDataLoader()))
-        model.addDataSource(ChartDataSource("third",
-                                            ResourcesCompat.getColor(resources, R.color.plot3, null),
-                                            InfiniteChartDataLoader()))
-        model.addDataSource(ChartDataSource("forth",
-                                            ResourcesCompat.getColor(resources, R.color.plot4, null),
-                                            InfiniteChartDataLoader()))
+//        model.addDataSource(ChartDataSource("third",
+//                                            ResourcesCompat.getColor(resources, R.color.plot3, null),
+//                                            InfiniteChartDataLoader()))
+//        model.addDataSource(ChartDataSource("forth",
+//                                            ResourcesCompat.getColor(resources, R.color.plot4, null),
+//                                            InfiniteChartDataLoader()))
         return model
     }
 }

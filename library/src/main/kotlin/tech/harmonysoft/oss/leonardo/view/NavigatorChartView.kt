@@ -181,12 +181,12 @@ class NavigatorChartView @JvmOverloads constructor(
         val wholeRange = mModel.getActiveRange(mView)
 
         if (wholeRange.start < activeRange.start) {
-            val activeXStart = mView.dataXToVisualX(activeRange.start)
+            val activeXStart = mView.dataMapper.dataXToVisualX(activeRange.start)
             canvas.drawRect(0f, 0f, activeXStart + dx, mView.height.toFloat(), mInactiveBackgroundPaint)
         }
 
         if (wholeRange.end > activeRange.end) {
-            val activeXEnd = mView.dataXToVisualX(activeRange.end)
+            val activeXEnd = mView.dataMapper.dataXToVisualX(activeRange.end)
             canvas.drawRect(activeXEnd + dx,
                             0f,
                             mView.width.toFloat(),
@@ -201,8 +201,8 @@ class NavigatorChartView @JvmOverloads constructor(
             return
         }
 
-        val activeXStart = mView.dataXToVisualX(activeRange.start)
-        val activeXEnd = mView.dataXToVisualX(activeRange.end)
+        val activeXStart = mView.dataMapper.dataXToVisualX(activeRange.start)
+        val activeXEnd = mView.dataMapper.dataXToVisualX(activeRange.end)
         canvas.drawRect(activeXStart + dx,
                         0f,
                         activeXEnd + dx,
@@ -217,7 +217,7 @@ class NavigatorChartView @JvmOverloads constructor(
         }
 
         // Left edge
-        val activeXStart = mView.dataXToVisualX(activeRange.start)
+        val activeXStart = mView.dataMapper.dataXToVisualX(activeRange.start)
         canvas.drawRect(activeXStart + dx,
                         0f,
                         activeXStart + mConfig.activeBorderHorizontalWidthInPixels,
@@ -225,7 +225,7 @@ class NavigatorChartView @JvmOverloads constructor(
                         mActiveBorderPaint)
 
         // Right edge
-        val activeXEnd = mView.dataXToVisualX(activeRange.end)
+        val activeXEnd = mView.dataMapper.dataXToVisualX(activeRange.end)
         canvas.drawRect(activeXEnd + -mConfig.activeBorderHorizontalWidthInPixels + dx,
                         0f,
                         activeXEnd + dx,
@@ -286,24 +286,24 @@ class NavigatorChartView @JvmOverloads constructor(
             invalidate()
         } else if (mCurrentAction == MOVE_ACTIVE_INTERVAL_START) {
             val showCaseDataRange = mModel.getActiveRange(mShowCase.dataAnchor)
-            val endRangeVisualX = mView.dataXToVisualX(showCaseDataRange.end)
+            val endRangeVisualX = mView.dataMapper.dataXToVisualX(showCaseDataRange.end)
             if (endRangeVisualX - visualX < MIN_WIDTH_IN_PIXELS) {
                 // Don't allow selector to become too narrow
                 return
             }
-            val newStartDataX = mView.visualXToDataX(Math.max(visualX, 0f))
+            val newStartDataX = mView.dataMapper.visualXToDataX(Math.max(visualX, 0f))
             if (newStartDataX != showCaseDataRange.start) {
                 mModel.setActiveRange(Range(newStartDataX, showCaseDataRange.end), mShowCase.dataAnchor)
             }
         } else {
             val showCaseDataRange = mModel.getActiveRange(mShowCase.dataAnchor)
             val myDataRange = mModel.getActiveRange(getModelAnchor())
-            val startRangeVisualX = mView.dataXToVisualX(showCaseDataRange.start)
+            val startRangeVisualX = mView.dataMapper.dataXToVisualX(showCaseDataRange.start)
             if (visualX - startRangeVisualX < MIN_WIDTH_IN_PIXELS) {
                 // Don't allow selector to become too narrow
                 return
             }
-            val newEndDataX = mView.visualXToDataX(Math.max(visualX, 0f))
+            val newEndDataX = mView.dataMapper.visualXToDataX(Math.max(visualX, 0f))
             if (newEndDataX <= myDataRange.end && newEndDataX != showCaseDataRange.end) {
                 mModel.setActiveRange(Range(showCaseDataRange.start, newEndDataX), mShowCase.dataAnchor)
             }
@@ -324,8 +324,8 @@ class NavigatorChartView @JvmOverloads constructor(
         }
 
         val dx = getNavigatorVisualShift()
-        val startX = mView.dataXToVisualX(activeRange.start) + dx
-        val endX = mView.dataXToVisualX(activeRange.end) + dx
+        val startX = mView.dataMapper.dataXToVisualX(activeRange.start) + dx
+        val endX = mView.dataMapper.dataXToVisualX(activeRange.end) + dx
 
         if (x + CLICK_RECOGNITION_ERROR_IN_PIXELS < startX || x - CLICK_RECOGNITION_ERROR_IN_PIXELS > endX) {
             return null

@@ -10,10 +10,11 @@ import android.graphics.RectF
  */
 class RoundedRectangleDrawer {
 
-    fun draw(rect: RectF, borderPaint: Paint, fillPaint: Paint, radius: Float, canvas: Canvas) {
-        drawRoundedEdges(rect, borderPaint, radius, canvas)
-        drawBackground(rect, fillPaint, radius, borderPaint.strokeWidth, canvas)
-        drawEdges(rect, borderPaint, radius, canvas)
+    fun draw(rect: RectF, borderPaint: () -> Paint, fillPaint: () -> Paint, radius: Float, canvas: Canvas) {
+        val borderWidth = borderPaint().strokeWidth
+        drawRoundedEdges(rect, borderPaint(), radius, canvas)
+        drawBackground(rect, fillPaint(), radius, borderWidth, canvas)
+        drawEdges(rect, borderPaint(), radius, canvas)
     }
 
     private fun drawRoundedEdges(rect: RectF, paint: Paint, radius: Float, canvas: Canvas) {
