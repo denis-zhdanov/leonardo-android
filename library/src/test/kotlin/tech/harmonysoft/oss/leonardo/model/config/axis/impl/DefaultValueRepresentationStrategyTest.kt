@@ -3,10 +3,6 @@ package tech.harmonysoft.oss.leonardo.model.config.axis.impl
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
-/**
- * @author Denis Zhdanov
- * @since 26/3/19
- */
 internal class DefaultValueRepresentationStrategyTest {
 
     private val mStrategy = DefaultValueRepresentationStrategy()

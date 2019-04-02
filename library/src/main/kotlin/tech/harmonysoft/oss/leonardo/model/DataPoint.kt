@@ -1,9 +1,5 @@
 package tech.harmonysoft.oss.leonardo.model
 
-/**
- * @author Denis Zhdanov
- * @since 26/3/19
- */
 data class DataPoint(val x: Long, val y: Long) {
 
     companion object {

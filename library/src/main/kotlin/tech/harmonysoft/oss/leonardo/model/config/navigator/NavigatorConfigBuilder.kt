@@ -2,10 +2,6 @@ package tech.harmonysoft.oss.leonardo.model.config.navigator
 
 import android.content.Context
 
-/**
- * @author Denis Zhdanov
- * @since 26/3/19
- */
 interface NavigatorConfigBuilder {
 
     fun withInactiveBackgroundColor(color: Int): NavigatorConfigBuilder

@@ -4,10 +4,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
-/**
- * @author Denis Zhdanov
- * @since 26/3/19
- */
 internal class TestWrapperText {
 
     private lateinit var mText: TextWrapper

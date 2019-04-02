@@ -22,10 +22,6 @@ import tech.harmonysoft.oss.leonardo.view.util.TextWidthMeasurer
 import java.util.*
 import kotlin.collections.ArrayList
 
-/**
- * @author Denis Zhdanov
- * @since 27/3/19
- */
 class ChartView @JvmOverloads constructor(
     context: Context,
     attributes: AttributeSet? = null,

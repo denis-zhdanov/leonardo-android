@@ -2,10 +2,6 @@ package tech.harmonysoft.oss.leonardo.view.util
 
 import tech.harmonysoft.oss.leonardo.model.text.TextWrapper
 
-/**
- * @author Denis Zhdanov
- * @since 27/3/19
- */
 interface TextSpaceMeasurer {
 
     /**

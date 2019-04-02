@@ -18,10 +18,6 @@ import tech.harmonysoft.oss.leonardo.model.runtime.ChartModelListener
 import tech.harmonysoft.oss.leonardo.view.NavigatorChartView.ActionType.*
 import tech.harmonysoft.oss.leonardo.view.chart.ChartView
 
-/**
- * @author Denis Zhdanov
- * @since 28/3/19
- */
 class NavigatorChartView @JvmOverloads constructor(
     context: Context,
     attributes: AttributeSet? = null,

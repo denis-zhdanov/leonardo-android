@@ -7,10 +7,6 @@ import tech.harmonysoft.oss.leonardo.model.config.navigator.NavigatorConfigBuild
 import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil.getColor
 import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil.getDimensionSizeInPixels
 
-/**
- * @author Denis Zhdanov
- * @since 26/3/19
- */
 class NavigatorConfigBuilderImpl : NavigatorConfigBuilder {
 
     private var inactiveBackgroundColor: Int? = null

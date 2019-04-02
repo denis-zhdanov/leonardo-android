@@ -5,10 +5,6 @@ import tech.harmonysoft.oss.leonardo.model.config.axis.AxisConfig
 import tech.harmonysoft.oss.leonardo.model.config.axis.AxisConfigBuilder
 import tech.harmonysoft.oss.leonardo.R
 
-/**
- * @author Denis Zhdanov
- * @since 26/3/19
- */
 interface ChartConfigBuilder {
 
     fun withXAxisConfig(config: AxisConfig): ChartConfigBuilder

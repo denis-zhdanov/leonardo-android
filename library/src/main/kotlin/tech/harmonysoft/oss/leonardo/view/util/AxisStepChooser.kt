@@ -3,10 +3,6 @@ package tech.harmonysoft.oss.leonardo.view.util
 import tech.harmonysoft.oss.leonardo.model.Range
 import tech.harmonysoft.oss.leonardo.model.text.ValueRepresentationStrategy
 
-/**
- * @author Denis Zhdanov
- * @since 27/3/19
- */
 class AxisStepChooser {
 
     fun choose(textStrategy: ValueRepresentationStrategy,

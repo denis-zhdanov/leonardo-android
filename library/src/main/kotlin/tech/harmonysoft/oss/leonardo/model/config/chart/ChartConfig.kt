@@ -2,10 +2,6 @@ package tech.harmonysoft.oss.leonardo.model.config.chart
 
 import tech.harmonysoft.oss.leonardo.model.config.axis.AxisConfig
 
-/**
- * @author Denis Zhdanov
- * @since 26/3/19
- */
 data class ChartConfig(
     val xAxisConfig: AxisConfig,
     val yAxisConfig: AxisConfig,

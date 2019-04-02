@@ -13,10 +13,6 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 
-/**
- * @author Denis Zhdanov
- * @since 26/3/19
- */
 internal class TimeValueRepresentationStrategyTest {
 
     private val format = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").apply {

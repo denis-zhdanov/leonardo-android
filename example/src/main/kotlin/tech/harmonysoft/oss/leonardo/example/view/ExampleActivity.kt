@@ -13,10 +13,6 @@ import tech.harmonysoft.oss.leonardo.model.util.LeonardoEvents
 import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil
 import java.util.*
 
-/**
- * @author Denis Zhdanov
- * @since 28/3/19
- */
 class ExampleActivity : FragmentActivity() {
 
     private val darkThemeActive: Boolean

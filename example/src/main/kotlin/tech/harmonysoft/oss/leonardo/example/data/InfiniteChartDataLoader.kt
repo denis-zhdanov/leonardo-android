@@ -5,10 +5,6 @@ import tech.harmonysoft.oss.leonardo.model.Range
 import tech.harmonysoft.oss.leonardo.model.data.ChartDataLoader
 import java.util.*
 
-/**
- * @author Denis Zhdanov
- * @since 28/3/19
- */
 class InfiniteChartDataLoader : ChartDataLoader {
 
     override fun load(range: Range): Collection<DataPoint>? {

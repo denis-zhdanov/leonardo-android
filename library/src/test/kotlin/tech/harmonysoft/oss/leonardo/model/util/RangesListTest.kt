@@ -5,10 +5,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import tech.harmonysoft.oss.leonardo.model.Range
 
-/**
- * @author Denis Zhdanov
- * @since 27/3/19
- */
 internal class RangesListTest {
 
     private lateinit var mCollection: RangesList

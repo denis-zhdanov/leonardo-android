@@ -2,10 +2,6 @@ package tech.harmonysoft.oss.leonardo.model.runtime
 
 import tech.harmonysoft.oss.leonardo.model.data.ChartDataSource
 
-/**
- * @author Denis Zhdanov
- * @since 27/3/19
- */
 interface ChartModelListener {
 
     fun onRangeChanged(anchor: Any)

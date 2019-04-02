@@ -4,10 +4,6 @@ import android.graphics.Paint
 import android.graphics.Rect
 import tech.harmonysoft.oss.leonardo.model.text.TextWrapper
 
-/**
- * @author Denis Zhdanov
- * @since 27/3/19
- */
 class TextHeightMeasurer(private val paint: Paint) : TextSpaceMeasurer {
 
     private val bounds = Rect()

@@ -10,10 +10,6 @@ import tech.harmonysoft.oss.leonardo.model.config.chart.ChartConfigBuilder
 import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil.getColor
 import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil.getDimensionSizeInPixels
 
-/**
- * @author Denis Zhdanov
- * @since 26/3/19
- */
 class ChartConfigBuilderImpl : ChartConfigBuilder {
 
     private var drawSelection = true

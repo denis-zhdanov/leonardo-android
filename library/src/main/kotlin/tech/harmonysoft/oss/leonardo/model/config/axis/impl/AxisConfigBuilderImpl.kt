@@ -9,10 +9,6 @@ import tech.harmonysoft.oss.leonardo.model.text.ValueRepresentationStrategy
 import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil.getColor
 import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil.getDimensionSizeInPixels
 
-/**
- * @author Denis Zhdanov
- * @since 26/3/19
- */
 class AxisConfigBuilderImpl : AxisConfigBuilder {
 
     private var labelTextStrategy: ValueRepresentationStrategy = DefaultValueRepresentationStrategy.INSTANCE

@@ -7,10 +7,6 @@ import tech.harmonysoft.oss.leonardo.model.Range
 import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil
 import kotlin.math.round
 
-/**
- * @author Denis Zhdanov
- * @since 30/3/19
- */
 class AxisAnimator(
     private val view: View,
     private val animationDurationMillis: Long = LeonardoUtil.ANIMATION_DURATION_MILLIS

@@ -7,10 +7,6 @@ import tech.harmonysoft.oss.leonardo.R
 import tech.harmonysoft.oss.leonardo.view.chart.ChartView
 import tech.harmonysoft.oss.leonardo.view.NavigatorShowcase
 
-/**
- * @author Denis Zhdanov
- * @since 26/3/19
- */
 object LeonardoUtil {
 
     const val DEFAULT_CORNER_RADIUS = 20f

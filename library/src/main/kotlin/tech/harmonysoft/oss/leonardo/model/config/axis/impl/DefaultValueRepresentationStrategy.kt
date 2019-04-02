@@ -3,10 +3,6 @@ package tech.harmonysoft.oss.leonardo.model.config.axis.impl
 import tech.harmonysoft.oss.leonardo.model.text.TextWrapper
 import tech.harmonysoft.oss.leonardo.model.text.ValueRepresentationStrategy
 
-/**
- * @author Denis Zhdanov
- * @since 26/3/19
- */
 class DefaultValueRepresentationStrategy : ValueRepresentationStrategy {
 
     private val text = TextWrapper()

@@ -4,10 +4,6 @@ import android.graphics.Paint
 import android.graphics.Typeface
 import tech.harmonysoft.oss.leonardo.model.config.chart.ChartConfig
 
-/**
- * @author Denis Zhdanov
- * @since 29/3/19
- */
 internal class ChartDrawSetup(private val config: ChartConfig) {
 
     private val paint = Paint()

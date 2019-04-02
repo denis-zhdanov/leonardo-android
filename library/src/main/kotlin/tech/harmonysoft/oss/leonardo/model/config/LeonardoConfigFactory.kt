@@ -7,10 +7,6 @@ import tech.harmonysoft.oss.leonardo.model.config.chart.impl.ChartConfigBuilderI
 import tech.harmonysoft.oss.leonardo.model.config.navigator.NavigatorConfigBuilder
 import tech.harmonysoft.oss.leonardo.model.config.navigator.impl.NavigatorConfigBuilderImpl
 
-/**
- * @author Denis Zhdanov
- * @since 26/3/19
- */
 object LeonardoConfigFactory {
 
     fun newAxisConfigBuilder(): AxisConfigBuilder {

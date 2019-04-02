@@ -3,10 +3,6 @@ package tech.harmonysoft.oss.leonardo.model.data
 import tech.harmonysoft.oss.leonardo.model.DataPoint
 import tech.harmonysoft.oss.leonardo.model.Range
 
-/**
- * @author Denis Zhdanov
- * @since 26/3/19
- */
 interface ChartDataLoader {
 
     /**

@@ -11,10 +11,6 @@ import tech.harmonysoft.oss.leonardo.example.R
 import tech.harmonysoft.oss.leonardo.example.data.ModelHolder
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModel
 
-/**
- * @author Denis Zhdanov
- * @since 31/3/19
- */
 class SettingsFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {

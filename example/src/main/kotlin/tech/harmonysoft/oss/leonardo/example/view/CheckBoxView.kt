@@ -8,10 +8,6 @@ import android.view.View
 import tech.harmonysoft.oss.leonardo.example.R
 import tech.harmonysoft.oss.leonardo.view.util.RoundedRectangleDrawer
 
-/**
- * @author Denis Zhdanov
- * @since 31/3/19
- */
 class CheckBoxView @JvmOverloads constructor(
     context: Context,
     attributes: AttributeSet? = null,

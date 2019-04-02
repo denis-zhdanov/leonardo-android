@@ -25,10 +25,6 @@ import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil
 import tech.harmonysoft.oss.leonardo.view.NavigatorChartView
 import tech.harmonysoft.oss.leonardo.view.chart.ChartView
 
-/**
- * @author Denis Zhdanov
- * @since 29/3/19
- */
 class ChartFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {

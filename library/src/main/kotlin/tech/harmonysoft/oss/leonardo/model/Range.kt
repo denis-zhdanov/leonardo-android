@@ -2,9 +2,6 @@ package tech.harmonysoft.oss.leonardo.model
 
 /**
  * Target data range with inclusive boundaries.
- *
- * @author Denis Zhdanov
- * @since 26/3/19
  */
 data class Range(val start: Long, val end: Long) {
 

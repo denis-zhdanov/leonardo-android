@@ -3,10 +3,6 @@ package tech.harmonysoft.oss.leonardo.model
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
-/**
- * @author Denis Zhdanov
- * @since 26/3/19
- */
 class RangeTest {
 
     @Test

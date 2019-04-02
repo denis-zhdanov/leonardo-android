@@ -2,9 +2,6 @@ package tech.harmonysoft.oss.leonardo.model.text
 
 /**
  * Defines contract for a custom strategy to map chart data to human-readable values.
- *
- * @author Denis Zhdanov
- * @since 26/3/19
  */
 interface ValueRepresentationStrategy {
 

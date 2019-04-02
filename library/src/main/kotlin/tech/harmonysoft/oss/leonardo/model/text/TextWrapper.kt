@@ -3,9 +3,6 @@ package tech.harmonysoft.oss.leonardo.model.text
 /**
  * Is introduced just for performance optimization - it's necessary to measure visual dimensions
  * a lot during graph drawing and rescaling, hence, we want to avoid creating unnecessary objects.
- *
- * @author Denis Zhdanov
- * @since 26/3/19
  */
 class TextWrapper {
 

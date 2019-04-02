@@ -3,10 +3,6 @@ package tech.harmonysoft.oss.leonardo.model.util
 import tech.harmonysoft.oss.leonardo.model.Range
 import kotlin.math.max
 
-/**
- * @author Denis Zhdanov
- * @since 27/3/19
- */
 class RangesList {
 
     private val _ranges = mutableListOf<Range>()

@@ -8,10 +8,6 @@ import tech.harmonysoft.oss.leonardo.model.data.ChartDataSource
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModel
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModelListener
 
-/**
- * @author Denis Zhdanov
- * @since 27/3/19
- */
 class ChartDataAutoLoader(private val model: ChartModel) : ChartModelListener {
 
     private val tasks = mutableSetOf<ChartDataLoadTask>()

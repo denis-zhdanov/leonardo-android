@@ -7,9 +7,6 @@ import tech.harmonysoft.oss.leonardo.model.util.RangesList
 
 /**
  * All methods are assumed to be called from UI thread.
- *
- * @author Denis Zhdanov
- * @since 27/3/19
  */
 interface ChartModel {
 

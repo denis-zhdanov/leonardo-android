@@ -5,10 +5,6 @@ import tech.harmonysoft.oss.leonardo.model.text.ValueRepresentationStrategy
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-/**
- * @author Denis Zhdanov
- * @since 26/3/19
- */
 class TimeValueRepresentationStrategy(private val offsetMs: Long) : ValueRepresentationStrategy {
 
     constructor(timeZone: TimeZone) : this(timeZone.rawOffset.toLong())

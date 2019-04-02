@@ -4,10 +4,6 @@ import android.content.Context
 import tech.harmonysoft.oss.leonardo.model.text.ValueRepresentationStrategy
 import tech.harmonysoft.oss.leonardo.R
 
-/**
- * @author Denis Zhdanov
- * @since 26/3/19
- */
 interface AxisConfigBuilder {
 
     fun disableLabels(): AxisConfigBuilder

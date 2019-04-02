@@ -4,10 +4,6 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
 
-/**
- * @author Denis Zhdanov
- * @since 27/3/19
- */
 class RoundedRectangleDrawer {
 
     fun draw(rect: RectF, borderPaint: () -> Paint, fillPaint: () -> Paint, radius: Float, canvas: Canvas) {
