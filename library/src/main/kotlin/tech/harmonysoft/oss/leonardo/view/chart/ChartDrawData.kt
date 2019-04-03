@@ -1,7 +1,5 @@
 package tech.harmonysoft.oss.leonardo.view.chart
 
-import android.os.Handler
-import android.os.Looper
 import android.view.View
 import tech.harmonysoft.oss.leonardo.model.DataPoint
 import tech.harmonysoft.oss.leonardo.model.Range
@@ -11,7 +9,6 @@ import tech.harmonysoft.oss.leonardo.model.data.ChartDataSource
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModel
 import tech.harmonysoft.oss.leonardo.model.runtime.DataMapper
 import tech.harmonysoft.oss.leonardo.model.text.TextWrapper
-import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil
 import tech.harmonysoft.oss.leonardo.view.util.*
 import kotlin.math.max
 import kotlin.math.min
@@ -48,22 +45,15 @@ internal class ChartDrawData(
     var maxYLabelWidth = 0
 
     private val drawXLabels = config.xAxisConfig.drawAxis || config.xAxisConfig.drawLabels
-    private val animationDataSourceInfo = mutableMapOf<ChartDataSource, DataSourceAnimationContext>()
-    private val handler = Handler(Looper.getMainLooper())
-    private val redrawTask = {
-        view.invalidate()
-    }
     private val animationEnabled = config.animationEnabled
     private val xWidthMeasurer = TextWidthMeasurer { drawSetup.xLabelPaint }
     private val yWidthMeasurer = TextWidthMeasurer { drawSetup.yLabelPaint }
     private val legendWidthMeasurer = TextWidthMeasurer { drawSetup.legendValuePaint }
+    private val plotAnimator = PlotAnimator(view)
 
     private var forceRefresh = false
 
     fun refresh() {
-        if (tickDataSourceFadeAnimation()) {
-            handler.postDelayed(redrawTask, LeonardoUtil.ANIMATION_TICK_FREQUENCY_MILLIS)
-        }
         maxYLabelWidth = 0
 
         val activeXDataRange = model.getActiveRange(dataAnchor)
@@ -152,35 +142,6 @@ internal class ChartDrawData(
         }
     }
 
-    private fun tickDataSourceFadeAnimation(): Boolean {
-        val toRemove = mutableListOf<ChartDataSource>()
-        val now = System.currentTimeMillis()
-        for ((key, context) in animationDataSourceInfo) {
-            if (now >= context.startTimeMs + LeonardoUtil.ANIMATION_DURATION_MILLIS) {
-                toRemove.add(key)
-                break
-            }
-
-            val elapsedTimeMs = now - context.startTimeMs
-            val totalAlphaDelta = context.finalAlpha - context.initialAlpha
-            val currentAlphaDelta = elapsedTimeMs * totalAlphaDelta / LeonardoUtil.ANIMATION_DURATION_MILLIS
-            context.currentAlpha = (context.initialAlpha + currentAlphaDelta).toInt()
-            if ((totalAlphaDelta > 0 && context.currentAlpha >= context.finalAlpha)
-                || (totalAlphaDelta < 0 && context.currentAlpha <= context.finalAlpha)
-            ) {
-                toRemove.add(key)
-            }
-        }
-
-        if (toRemove.isNotEmpty()) {
-            forceRefresh = true
-            toRemove.forEach {
-                animationDataSourceInfo.remove(it)
-            }
-        }
-
-        return !animationDataSourceInfo.isEmpty()
-    }
 
     fun onYLabel(label: TextWrapper) {
         maxYLabelWidth = max(maxYLabelWidth, yWidthMeasurer.measureVisualSpace(label))
@@ -195,29 +156,21 @@ internal class ChartDrawData(
     }
 
     fun fadeIn(dataSource: ChartDataSource) {
-        animationDataSourceInfo[dataSource] = DataSourceAnimationContext(0, 255)
+        plotAnimator.fadeIn(dataSource)
         forceRefresh = true
     }
 
     fun fadeOut(dataSource: ChartDataSource) {
-        animationDataSourceInfo[dataSource] = DataSourceAnimationContext(255, 0)
+        plotAnimator.fadeOut(dataSource)
         forceRefresh = true
     }
 
     fun isAnimationInProgress(dataSource: ChartDataSource): Boolean {
-        return animationDataSourceInfo.containsKey(dataSource)
+        return plotAnimator.isAnimationInProgress(dataSource)
     }
 
     fun getCurrentAlpha(dataSource: ChartDataSource): Int {
-        return animationDataSourceInfo[dataSource]?.currentAlpha ?: 255
-    }
-
-    private data class DataSourceAnimationContext(
-        val initialAlpha: Int,
-        val finalAlpha: Int,
-        val startTimeMs: Long = System.currentTimeMillis()
-    ) {
-        var currentAlpha = initialAlpha
+        return plotAnimator.getAlpha(dataSource)
     }
 
     override fun dataXToVisualX(dataX: Long): Float {

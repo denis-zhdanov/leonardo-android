@@ -65,7 +65,9 @@ class ChartView @JvmOverloads constructor(
 
         override fun onDataSourceDisabled(dataSource: ChartDataSource) {
             if (::config.isInitialized && config.animationEnabled) {
-                drawData.fadeOut(dataSource)
+                if (areThereOtherActiveDataSources(dataSource)) {
+                    drawData.fadeOut(dataSource)
+                }
                 invalidate()
             }
         }
@@ -73,7 +75,9 @@ class ChartView @JvmOverloads constructor(
         override fun onDataSourceAdded(dataSource: ChartDataSource) {
             refreshDataSources()
             if (::config.isInitialized && config.animationEnabled) {
-                drawData.fadeIn(dataSource)
+                if (areThereOtherActiveDataSources(dataSource)) {
+                    drawData.fadeIn(dataSource)
+                }
             }
             invalidate()
         }
@@ -123,6 +127,12 @@ class ChartView @JvmOverloads constructor(
             }
 
             model.selectedX = drawData.visualXToDataX(lastClickVisualX)
+        }
+    }
+
+    private fun areThereOtherActiveDataSources(dataSource: ChartDataSource): Boolean {
+        return model.registeredDataSources.any {
+            it != dataSource && model.isActive(it)
         }
     }
 
@@ -353,12 +363,11 @@ class ChartView @JvmOverloads constructor(
         val paint = drawSetup.plotPaint.apply {
             color = dataSource.color
         }
-        if (!drawData.isAnimationInProgress(dataSource)) {
-            if (!model.isActive(dataSource)) {
-                return
-            }
-        } else {
+        if (drawData.isAnimationInProgress(dataSource)) {
             paint.alpha = drawData.getCurrentAlpha(dataSource)
+
+        } else if (!model.isActive(dataSource)) {
+            return
         }
         val interval = model.getCurrentRangePoints(dataSource, dataAnchor)
 
