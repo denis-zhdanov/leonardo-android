@@ -170,7 +170,7 @@ class NavigatorChartView @JvmOverloads constructor(
 
     private fun drawInactiveBackground(canvas: Canvas, dx: Float) {
         val activeRange = mModel.getActiveRange(mShowCase.dataAnchor)
-        if (activeRange === EMPTY_RANGE) {
+        if (activeRange.empty) {
             return
         }
 
@@ -193,7 +193,7 @@ class NavigatorChartView @JvmOverloads constructor(
 
     private fun drawActiveBackground(canvas: Canvas, dx: Float) {
         val activeRange = mModel.getActiveRange(mShowCase.dataAnchor)
-        if (activeRange === EMPTY_RANGE) {
+        if (activeRange.empty) {
             return
         }
 
@@ -208,7 +208,7 @@ class NavigatorChartView @JvmOverloads constructor(
 
     private fun drawActiveBorder(canvas: Canvas, dx: Float) {
         val activeRange = mModel.getActiveRange(mShowCase.dataAnchor)
-        if (activeRange === EMPTY_RANGE) {
+        if (activeRange.empty) {
             return
         }
 
@@ -315,7 +315,7 @@ class NavigatorChartView @JvmOverloads constructor(
 
     private fun getActionType(x: Float): ActionType? {
         val activeRange = mModel.getActiveRange(mShowCase.dataAnchor)
-        if (activeRange === EMPTY_RANGE) {
+        if (activeRange.empty) {
             return null
         }
 

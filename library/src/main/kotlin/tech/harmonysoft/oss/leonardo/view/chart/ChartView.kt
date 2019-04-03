@@ -8,10 +8,7 @@ import android.graphics.Path
 import android.graphics.RectF
 import android.util.AttributeSet
 import android.view.View
-import tech.harmonysoft.oss.leonardo.model.DataPoint
-import tech.harmonysoft.oss.leonardo.model.LineFormula
-import tech.harmonysoft.oss.leonardo.model.Range
-import tech.harmonysoft.oss.leonardo.model.VisualPoint
+import tech.harmonysoft.oss.leonardo.model.*
 import tech.harmonysoft.oss.leonardo.model.config.chart.ChartConfig
 import tech.harmonysoft.oss.leonardo.model.data.ChartDataSource
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModel
@@ -278,7 +275,7 @@ class ChartView @JvmOverloads constructor(
         val paint = drawSetup.xLabelPaint.apply { this.alpha = alpha }
         var value = range.findFirstStepValue(step)
         var x = drawData.xAxis.visualShift + unitWidth * (value - range.start)
-        while (x < width) {
+        while (x >= 0 && x < width) {
             val label = labelTextStrategy.getLabel(value, step)
             canvas.drawText(label.data, 0, label.length, x, height.toFloat(), paint)
             value += step
@@ -518,22 +515,19 @@ class ChartView @JvmOverloads constructor(
                                                                nextDataPoint.y.toFloat()))
                 dataY = Math.round(formula.getY(dataX.toFloat()).toDouble())
             } else {
-                var i = Collections.binarySearch(points, DataPoint(dataX, 0), DataPoint.COMPARATOR_BY_X)
-                if (i >= 0) {
-                    dataY = points[i].y
+                val equalOrLower = equalOrLower(dataX, points) ?: continue
+                dataY = if (equalOrLower.x == dataX) {
+                    equalOrLower.y
                 } else {
-                    i = -(i + 1)
-                    val prev = points[i - 1]
-                    val next = points[i]
-                    val formula = calculateLineFormula(VisualPoint(prev.x.toFloat(), prev.y.toFloat()),
+                    val next = next(dataX, points) ?: continue
+                    val formula = calculateLineFormula(VisualPoint(equalOrLower.x.toFloat(), equalOrLower.y.toFloat()),
                                                        VisualPoint(next.x.toFloat(), next.y.toFloat()))
-                    dataY = Math.round(formula.getY(dataX.toFloat()).toDouble())
+                    Math.round(formula.getY(dataX.toFloat()).toDouble())
                 }
             }
 
             val visualPoint = drawData.dataPointToVisualPoint(DataPoint(dataX, dataY))
-            dataSource2yInfo[dataSource] =
-                ValueInfo(dataY, visualPoint.y)
+            dataSource2yInfo[dataSource] = ValueInfo(dataY, visualPoint.y)
             val yShift = config.plotLineWidthInPixels / 2
             drawSelectionPlotSign(canvas,
                                   VisualPoint(visualPoint.x, visualPoint.y - yShift),

@@ -1,7 +1,6 @@
 package tech.harmonysoft.oss.leonardo.model.runtime.impl
 
-import tech.harmonysoft.oss.leonardo.model.DataPoint
-import tech.harmonysoft.oss.leonardo.model.Range
+import tech.harmonysoft.oss.leonardo.model.*
 import tech.harmonysoft.oss.leonardo.model.data.ChartDataSource
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModel
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModelListener
@@ -17,10 +16,12 @@ class ChartModelImpl(private val bufferPagesCount: Int) : ChartModel {
 
     private val listeners = mutableListOf<ChartModelListener>()
 
-    private val points = mutableMapOf<ChartDataSource, NavigableSet<DataPoint>>()
+    private val points = mutableMapOf<ChartDataSource, NavigableSet<WithComparableLongProperty>>()
     private val loadedRanges = mutableMapOf<ChartDataSource, RangesList>()
     private val activeRanges = mutableMapOf<Any, Range>()
     private val disabledDataSources = mutableSetOf<ChartDataSource>()
+    private val bottomDataAnchor = DataPointAnchor()
+    private val topDataAnchor = DataPointAnchor()
 
     private var compoundActiveRange = Range.EMPTY_RANGE
     private var _bufferRange = Range.EMPTY_RANGE
@@ -61,7 +62,7 @@ class ChartModelImpl(private val bufferPagesCount: Int) : ChartModel {
     override fun setActiveRange(range: Range, anchor: Any) {
         activeRanges[anchor] = range
         val newCompoundRange: Range
-        if (compoundActiveRange === Range.EMPTY_RANGE) {
+        if (compoundActiveRange.empty) {
             newCompoundRange = range
         } else {
             var min = Long.MAX_VALUE
@@ -111,7 +112,7 @@ class ChartModelImpl(private val bufferPagesCount: Int) : ChartModel {
                 + "data sources: ${points.keys})"
             )
         }
-        points[dataSource] = TreeSet(DataPoint.COMPARATOR_BY_X)
+        points[dataSource] = TreeSet(WithComparableLongProperty.COMPARATOR)
         loadedRanges[dataSource] = RangesList()
         listeners.forEach {
             it.onDataSourceAdded(dataSource)
@@ -157,47 +158,44 @@ class ChartModelImpl(private val bufferPagesCount: Int) : ChartModel {
 
     override fun arePointsForActiveRangeLoaded(dataSource: ChartDataSource, anchor: Any): Boolean {
         val range = getActiveRange(anchor)
-        if (range === Range.EMPTY_RANGE) {
+        if (range.empty) {
             return true
         }
         val rangesList = loadedRanges[dataSource]
         return rangesList != null && rangesList.contains(range)
     }
 
-    override fun getCurrentRangePoints(dataSource: ChartDataSource, anchor: Any): List<DataPoint> {
+    @Suppress("UNCHECKED_CAST")
+    override fun getCurrentRangePoints(dataSource: ChartDataSource, anchor: Any): NavigableSet<DataPoint> {
         val range = getActiveRange(anchor)
-        if (range === Range.EMPTY_RANGE) {
-            return emptyList()
+        if (range.empty) {
+            return EMPTY_DATA_POINTS
         }
-        val points = points[dataSource] ?: return emptyList()
-        return points
-            .headSet(DataPoint(range.end, 0), true)
-            .tailSet(DataPoint(range.start, 0), true)
-            .toList()
+        val points = points[dataSource] ?: return EMPTY_DATA_POINTS
+
+        topDataAnchor.value = range.end
+        val filteredFromTop = points.headSet(topDataAnchor, true)
+
+        bottomDataAnchor.value = range.start
+        return filteredFromTop.tailSet(bottomDataAnchor, true) as NavigableSet<DataPoint>
     }
 
     override fun getPreviousPointForActiveRange(dataSource: ChartDataSource, anchor: Any): DataPoint? {
         val range = getActiveRange(anchor)
-        if (range === Range.EMPTY_RANGE) {
+        if (range.empty) {
             return null
         }
         val points = points[dataSource] ?: return null
-        val ceiling = points.ceiling(DataPoint(range.start, 0))
-        return if (ceiling == null || ceiling.x > range.end) {
-            null
-        } else points.lower(ceiling)
+        return previous(range.start, points) as? DataPoint
     }
 
     override fun getNextPointForActiveRange(dataSource: ChartDataSource, anchor: Any): DataPoint? {
         val range = getActiveRange(anchor)
-        if (range === Range.EMPTY_RANGE) {
+        if (range.empty) {
             return null
         }
         val points = points[dataSource] ?: return null
-        val floor = points.floor(DataPoint(range.end, 0))
-        return if (floor == null || floor.x < range.start) {
-            null
-        } else points.higher(floor)
+        return next(range.end, points) as? DataPoint
     }
 
     override fun getLoadedRanges(dataSource: ChartDataSource): RangesList {
@@ -242,5 +240,9 @@ class ChartModelImpl(private val bufferPagesCount: Int) : ChartModel {
 
     override fun removeListener(listener: ChartModelListener) {
         listeners.remove(listener)
+    }
+
+    companion object {
+        private val EMPTY_DATA_POINTS = TreeSet<DataPoint>()
     }
 }
