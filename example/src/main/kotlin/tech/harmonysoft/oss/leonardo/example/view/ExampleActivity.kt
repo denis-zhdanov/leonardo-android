@@ -9,7 +9,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import kotlinx.android.synthetic.main.activity_example.*
 import tech.harmonysoft.oss.leonardo.example.R
-import tech.harmonysoft.oss.leonardo.model.util.LeonardoEvents
+import tech.harmonysoft.oss.leonardo.example.event.LeonardoEvents
 import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil
 import java.util.*
 

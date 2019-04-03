@@ -20,7 +20,7 @@ import tech.harmonysoft.oss.leonardo.model.data.ChartDataSource
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModel
 import tech.harmonysoft.oss.leonardo.model.runtime.impl.ChartDataAutoLoader
 import tech.harmonysoft.oss.leonardo.model.runtime.impl.ChartModelImpl
-import tech.harmonysoft.oss.leonardo.model.util.LeonardoEvents
+import tech.harmonysoft.oss.leonardo.example.event.LeonardoEvents
 import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil
 import tech.harmonysoft.oss.leonardo.view.NavigatorChartView
 import tech.harmonysoft.oss.leonardo.view.chart.ChartView

@@ -8,7 +8,6 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import tech.harmonysoft.oss.leonardo.model.Range
-import tech.harmonysoft.oss.leonardo.model.Range.Companion.EMPTY_RANGE
 import tech.harmonysoft.oss.leonardo.model.config.LeonardoConfigFactory
 import tech.harmonysoft.oss.leonardo.model.config.chart.ChartConfig
 import tech.harmonysoft.oss.leonardo.model.config.navigator.NavigatorConfig
@@ -24,29 +23,29 @@ class NavigatorChartView @JvmOverloads constructor(
     defaultStyle: Int = 0
 ) : View(context, attributes, defaultStyle) {
 
-    private lateinit var mConfig: NavigatorConfig
-    private lateinit var mModel: ChartModel
-    private val mView = ChartView(getContext())
-    private lateinit var mShowCase: NavigatorShowcase
+    private lateinit var config: NavigatorConfig
+    private lateinit var model: ChartModel
+    private val view = ChartView(getContext())
+    private lateinit var showCase: NavigatorShowcase
 
-    private lateinit var mInactiveBackgroundPaint: Paint
-    private lateinit var mActiveBackgroundPaint: Paint
-    private lateinit var mActiveBorderPaint: Paint
+    private lateinit var inactiveBackgroundPaint: Paint
+    private lateinit var activeBackgroundPaint: Paint
+    private lateinit var activeBorderPaint: Paint
 
-    private var mCurrentAction: ActionType? = null
-    private var mPreviousActionVisualX: Float? = null
+    private var currentAction: ActionType? = null
+    private var previousActionVisualX = Float.NaN
 
     fun apply(navigatorConfig: NavigatorConfig, chartConfig: ChartConfig) {
-        mConfig = navigatorConfig
-        mActiveBackgroundPaint = createPaint(chartConfig.backgroundColor)
-        mInactiveBackgroundPaint = createPaint(mConfig.inactiveChartBackgroundColor)
-        mActiveBorderPaint = createPaint(mConfig.activeBorderColor)
+        config = navigatorConfig
+        activeBackgroundPaint = createPaint(chartConfig.backgroundColor)
+        inactiveBackgroundPaint = createPaint(config.inactiveChartBackgroundColor)
+        activeBorderPaint = createPaint(config.activeBorderColor)
         val plotLineWidth = Math.max(1, chartConfig.plotLineWidthInPixels / 2)
         val axisConfig = LeonardoConfigFactory.newAxisConfigBuilder()
             .disableLabels()
             .disableAxis()
             .build()
-        mView.apply(LeonardoConfigFactory.newChartConfigBuilder()
+        view.apply(LeonardoConfigFactory.newChartConfigBuilder()
                         .withConfig(chartConfig)
                         .withPlotLineWidthInPixels(plotLineWidth)
                         .disableSelection()
@@ -60,15 +59,15 @@ class NavigatorChartView @JvmOverloads constructor(
     }
 
     fun apply(model: ChartModel) {
-        mModel = model
-        mView.apply(model)
+        this.model = model
+        view.apply(model)
         setupListener(model)
         refreshMyRange()
         invalidate()
     }
 
     fun apply(showCase: NavigatorShowcase) {
-        mShowCase = showCase
+        this.showCase = showCase
     }
 
     private fun setupListener(model: ChartModel) {
@@ -76,7 +75,7 @@ class NavigatorChartView @JvmOverloads constructor(
             override fun onRangeChanged(anchor: Any) {
                 if (anchor === getModelAnchor()) {
                     refreshMyRange()
-                } else if (anchor === mShowCase.dataAnchor) {
+                } else if (anchor === showCase.dataAnchor) {
                     invalidate()
                 }
             }
@@ -106,14 +105,14 @@ class NavigatorChartView @JvmOverloads constructor(
     }
 
     private fun refreshMyRange() {
-        val navigatorRange = mModel.getActiveRange(getModelAnchor())
-        mModel.setActiveRange(navigatorRange, mView)
+        val navigatorRange = model.getActiveRange(getModelAnchor())
+        model.setActiveRange(navigatorRange, view)
         val dependencyPointsNumber = Math.max(1, (navigatorRange.size + 1) / 4)
         val dependencyRangeShift = (navigatorRange.size + 1 - dependencyPointsNumber) / 2
         val dependencyRangeStart = navigatorRange.start + 1 + dependencyRangeShift
         val dependencyRange = Range(dependencyRangeStart,
                                     dependencyRangeStart + dependencyPointsNumber)
-        mModel.setActiveRange(dependencyRange, mShowCase.dataAnchor)
+        model.setActiveRange(dependencyRange, showCase.dataAnchor)
         invalidate()
     }
 
@@ -126,11 +125,11 @@ class NavigatorChartView @JvmOverloads constructor(
     }
 
     private fun mayBeSetInnerChartDimensions() {
-        if (mView.width + 2 != width) {
-            mView.left = 0
-            mView.top = 0
-            mView.right = width
-            mView.bottom = height
+        if (view.width + 2 != width) {
+            view.left = 0
+            view.top = 0
+            view.right = width
+            view.bottom = height
         }
     }
 
@@ -155,7 +154,7 @@ class NavigatorChartView @JvmOverloads constructor(
     @SuppressLint("WrongCall")
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        if (!::mConfig.isInitialized) {
+        if (!::config.isInitialized) {
             return
         }
 
@@ -165,82 +164,82 @@ class NavigatorChartView @JvmOverloads constructor(
         drawInactiveBackground(canvas, dx)
         drawActiveBackground(canvas, dx)
         drawActiveBorder(canvas, dx)
-        mView.draw(canvas)
+        view.draw(canvas)
     }
 
     private fun drawInactiveBackground(canvas: Canvas, dx: Float) {
-        val activeRange = mModel.getActiveRange(mShowCase.dataAnchor)
+        val activeRange = model.getActiveRange(showCase.dataAnchor)
         if (activeRange.empty) {
             return
         }
 
-        val wholeRange = mModel.getActiveRange(mView)
+        val wholeRange = model.getActiveRange(view)
 
         if (wholeRange.start < activeRange.start) {
-            val activeXStart = mView.dataMapper.dataXToVisualX(activeRange.start)
-            canvas.drawRect(0f, 0f, activeXStart + dx, mView.height.toFloat(), mInactiveBackgroundPaint)
+            val activeXStart = view.dataMapper.dataXToVisualX(activeRange.start)
+            canvas.drawRect(0f, 0f, activeXStart + dx, view.height.toFloat(), inactiveBackgroundPaint)
         }
 
         if (wholeRange.end > activeRange.end) {
-            val activeXEnd = mView.dataMapper.dataXToVisualX(activeRange.end)
+            val activeXEnd = view.dataMapper.dataXToVisualX(activeRange.end)
             canvas.drawRect(activeXEnd + dx,
                             0f,
-                            mView.width.toFloat(),
-                            mView.height.toFloat(),
-                            mInactiveBackgroundPaint)
+                            view.width.toFloat(),
+                            view.height.toFloat(),
+                            inactiveBackgroundPaint)
         }
     }
 
     private fun drawActiveBackground(canvas: Canvas, dx: Float) {
-        val activeRange = mModel.getActiveRange(mShowCase.dataAnchor)
+        val activeRange = model.getActiveRange(showCase.dataAnchor)
         if (activeRange.empty) {
             return
         }
 
-        val activeXStart = mView.dataMapper.dataXToVisualX(activeRange.start)
-        val activeXEnd = mView.dataMapper.dataXToVisualX(activeRange.end)
+        val activeXStart = view.dataMapper.dataXToVisualX(activeRange.start)
+        val activeXEnd = view.dataMapper.dataXToVisualX(activeRange.end)
         canvas.drawRect(activeXStart + dx,
                         0f,
                         activeXEnd + dx,
-                        mView.height.toFloat(),
-                        mActiveBackgroundPaint)
+                        view.height.toFloat(),
+                        activeBackgroundPaint)
     }
 
     private fun drawActiveBorder(canvas: Canvas, dx: Float) {
-        val activeRange = mModel.getActiveRange(mShowCase.dataAnchor)
+        val activeRange = model.getActiveRange(showCase.dataAnchor)
         if (activeRange.empty) {
             return
         }
 
         // Left edge
-        val activeXStart = mView.dataMapper.dataXToVisualX(activeRange.start)
+        val activeXStart = view.dataMapper.dataXToVisualX(activeRange.start)
         canvas.drawRect(activeXStart + dx,
                         0f,
-                        activeXStart + mConfig.activeBorderHorizontalWidthInPixels,
-                        mView.height.toFloat(),
-                        mActiveBorderPaint)
+                        activeXStart + config.activeBorderHorizontalWidthInPixels,
+                        view.height.toFloat(),
+                        activeBorderPaint)
 
         // Right edge
-        val activeXEnd = mView.dataMapper.dataXToVisualX(activeRange.end)
-        canvas.drawRect(activeXEnd + -mConfig.activeBorderHorizontalWidthInPixels + dx,
+        val activeXEnd = view.dataMapper.dataXToVisualX(activeRange.end)
+        canvas.drawRect(activeXEnd + -config.activeBorderHorizontalWidthInPixels + dx,
                         0f,
                         activeXEnd + dx,
-                        mView.height.toFloat(),
-                        mActiveBorderPaint)
+                        view.height.toFloat(),
+                        activeBorderPaint)
 
         // Top edge
         canvas.drawRect(activeXStart + dx,
                         0f,
                         activeXEnd + dx,
-                        mConfig.activeBorderVerticalHeightInPixels.toFloat(),
-                        mActiveBorderPaint)
+                        config.activeBorderVerticalHeightInPixels.toFloat(),
+                        activeBorderPaint)
 
         // Bottom edge
         canvas.drawRect(activeXStart + dx,
-                        mView.height.toFloat(),
+                        view.height.toFloat(),
                         activeXEnd + dx,
-                        mView.height - mConfig.activeBorderVerticalHeightInPixels.toFloat(),
-                        mActiveBorderPaint)
+                        view.height - config.activeBorderVerticalHeightInPixels.toFloat(),
+                        activeBorderPaint)
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -255,18 +254,18 @@ class NavigatorChartView @JvmOverloads constructor(
     }
 
     private fun startAction(visualX: Float) {
-        mCurrentAction = getActionType(visualX)
-        if (mCurrentAction != null) {
-            mPreviousActionVisualX = visualX
+        currentAction = getActionType(visualX)
+        if (currentAction != null) {
+            previousActionVisualX = visualX
             invalidate()
         }
     }
 
     private fun move(visualX: Float) {
-        val previousVisualX = mPreviousActionVisualX
-        mPreviousActionVisualX = visualX
+        val previousVisualX = previousActionVisualX
+        previousActionVisualX = visualX
 
-        if (mCurrentAction == null || previousVisualX == null) {
+        if (currentAction == null || previousVisualX.isNaN()) {
             return
         }
 
@@ -277,51 +276,51 @@ class NavigatorChartView @JvmOverloads constructor(
 
         val ratio = getShowCaseVisualRatio()
 
-        if (mCurrentAction == MOVE_COMPLETE_ACTIVE_INTERVAL) {
-            mShowCase.scrollHorizontally(navigatorVisualDeltaX * ratio)
+        if (currentAction == MOVE_COMPLETE_ACTIVE_INTERVAL) {
+            showCase.scrollHorizontally(navigatorVisualDeltaX * ratio)
             invalidate()
-        } else if (mCurrentAction == MOVE_ACTIVE_INTERVAL_START) {
-            val showCaseDataRange = mModel.getActiveRange(mShowCase.dataAnchor)
-            val endRangeVisualX = mView.dataMapper.dataXToVisualX(showCaseDataRange.end)
+        } else if (currentAction == MOVE_ACTIVE_INTERVAL_START) {
+            val showCaseDataRange = model.getActiveRange(showCase.dataAnchor)
+            val endRangeVisualX = view.dataMapper.dataXToVisualX(showCaseDataRange.end)
             if (endRangeVisualX - visualX < MIN_WIDTH_IN_PIXELS) {
                 // Don't allow selector to become too narrow
                 return
             }
-            val newStartDataX = mView.dataMapper.visualXToDataX(Math.max(visualX, 0f))
+            val newStartDataX = view.dataMapper.visualXToDataX(Math.max(visualX, 0f))
             if (newStartDataX != showCaseDataRange.start) {
-                mModel.setActiveRange(Range(newStartDataX, showCaseDataRange.end), mShowCase.dataAnchor)
+                model.setActiveRange(Range(newStartDataX, showCaseDataRange.end), showCase.dataAnchor)
             }
         } else {
-            val showCaseDataRange = mModel.getActiveRange(mShowCase.dataAnchor)
-            val myDataRange = mModel.getActiveRange(getModelAnchor())
-            val startRangeVisualX = mView.dataMapper.dataXToVisualX(showCaseDataRange.start)
+            val showCaseDataRange = model.getActiveRange(showCase.dataAnchor)
+            val myDataRange = model.getActiveRange(getModelAnchor())
+            val startRangeVisualX = view.dataMapper.dataXToVisualX(showCaseDataRange.start)
             if (visualX - startRangeVisualX < MIN_WIDTH_IN_PIXELS) {
                 // Don't allow selector to become too narrow
                 return
             }
-            val newEndDataX = mView.dataMapper.visualXToDataX(Math.max(visualX, 0f))
+            val newEndDataX = view.dataMapper.visualXToDataX(Math.max(visualX, 0f))
             if (newEndDataX <= myDataRange.end && newEndDataX != showCaseDataRange.end) {
-                mModel.setActiveRange(Range(showCaseDataRange.start, newEndDataX), mShowCase.dataAnchor)
+                model.setActiveRange(Range(showCaseDataRange.start, newEndDataX), showCase.dataAnchor)
             }
         }
     }
 
     private fun release(visualX: Float) {
         move(visualX)
-        mCurrentAction = null
-        mPreviousActionVisualX = null
+        currentAction = null
+        previousActionVisualX = Float.NaN
         invalidate()
     }
 
     private fun getActionType(x: Float): ActionType? {
-        val activeRange = mModel.getActiveRange(mShowCase.dataAnchor)
+        val activeRange = model.getActiveRange(showCase.dataAnchor)
         if (activeRange.empty) {
             return null
         }
 
         val dx = getNavigatorVisualShift()
-        val startX = mView.dataMapper.dataXToVisualX(activeRange.start) + dx
-        val endX = mView.dataMapper.dataXToVisualX(activeRange.end) + dx
+        val startX = view.dataMapper.dataXToVisualX(activeRange.start) + dx
+        val endX = view.dataMapper.dataXToVisualX(activeRange.end) + dx
 
         if (x + CLICK_RECOGNITION_ERROR_IN_PIXELS < startX || x - CLICK_RECOGNITION_ERROR_IN_PIXELS > endX) {
             return null
@@ -335,14 +334,14 @@ class NavigatorChartView @JvmOverloads constructor(
     }
 
     private fun getShowCaseVisualRatio(): Float {
-        val navigatorDataRange = mModel.getActiveRange(getModelAnchor())
-        val showCaseDataRange = mModel.getActiveRange(mShowCase.dataAnchor)
+        val navigatorDataRange = model.getActiveRange(getModelAnchor())
+        val showCaseDataRange = model.getActiveRange(showCase.dataAnchor)
         return navigatorDataRange.size.toFloat() / showCaseDataRange.size.toFloat()
     }
 
     private fun getNavigatorVisualShift(): Float {
         var dx = 0f
-        val showCaseVisualXShift = mShowCase.visualXShift
+        val showCaseVisualXShift = showCase.visualXShift
         if (showCaseVisualXShift != 0f) {
             dx = showCaseVisualXShift / getShowCaseVisualRatio()
         }

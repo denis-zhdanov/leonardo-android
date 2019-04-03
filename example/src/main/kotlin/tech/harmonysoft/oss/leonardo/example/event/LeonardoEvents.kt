@@ -1,4 +1,4 @@
-package tech.harmonysoft.oss.leonardo.model.util
+package tech.harmonysoft.oss.leonardo.example.event
 
 object LeonardoEvents {
 
