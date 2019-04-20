@@ -115,10 +115,6 @@ internal class ChartDrawData(
         val initialStep = data.axisStep
         val initialSize = data.availableSize
 
-        if (yAxis) {
-            maxYLabelWidth = 0
-        }
-
         data.availableSize = availableSize
         data.visualShift = 0f
 
