@@ -4,7 +4,7 @@
     <style name="Leonardo.Light" parent="@android:style/Theme.Light">
         <item name="leonardo_chart_background_color">#ffffffff</item>
         <item name="leonardo_chart_grid_color">#1a182d3b</item>
-        <item name="leonardo_chart_axis_label_text_size">14sp</item>
+        <item name="leonardo_chart_axis_label_text_size">10sp</item>
         <item name="leonardo_chart_axis_label_color">#ff96a2aa</item>
         <item name="leonardo_chart_grid_width">1dp</item>
         <item name="leonardo_chart_plot_width">3dp</item>
@@ -21,7 +21,7 @@
     <style name="Leonardo.Dark" parent="@android:style/Theme.Black">
         <item name="leonardo_chart_background_color">#ff1d2733</item>
         <item name="leonardo_chart_grid_color">#1affffff</item>
-        <item name="leonardo_chart_axis_label_text_size">14sp</item>
+        <item name="leonardo_chart_axis_label_text_size">10sp</item>
         <item name="leonardo_chart_axis_label_color">#ff506372</item>
         <item name="leonardo_chart_grid_width">1dp</item>
         <item name="leonardo_chart_plot_width">3dp</item>
