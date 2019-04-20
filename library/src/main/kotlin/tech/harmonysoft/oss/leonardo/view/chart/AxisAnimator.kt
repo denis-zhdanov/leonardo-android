@@ -48,11 +48,13 @@ class AxisAnimator(
         visualSize = availableSize
         rangeTo = to
 
-        animator.cancel()
-        animator.setFloatValues(0f, animationDurationMillis.toFloat())
         initialStepAlpha = 255
         finalStepAlpha = 0
-        animator.start()
+
+        if (!inProgress) {
+            animator.setFloatValues(0f, animationDurationMillis.toFloat())
+            animator.start()
+        }
     }
 
     private fun tickAnimation(elapsedTimeMs: Long) {

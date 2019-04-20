@@ -29,6 +29,9 @@ interface ChartModel {
 
     fun arePointsForActiveRangeLoaded(dataSource: ChartDataSource, anchor: Any): Boolean
 
+    fun getAllPoints(dataSource: ChartDataSource): NavigableSet<DataPoint>
+    fun getPoints(dataSource: ChartDataSource, start: Long, end: Long): NavigableSet<DataPoint>
+
     /**
      * @param dataSource    target data source
      * @param anchor        target anchor

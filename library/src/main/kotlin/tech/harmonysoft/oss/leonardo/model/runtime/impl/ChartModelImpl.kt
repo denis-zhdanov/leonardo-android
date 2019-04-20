@@ -172,18 +172,27 @@ class ChartModelImpl(private val bufferPagesCount: Int = 3) : ChartModel {
     }
 
     @Suppress("UNCHECKED_CAST")
-    override fun getCurrentRangePoints(dataSource: ChartDataSource, anchor: Any): NavigableSet<DataPoint> {
-        val range = getActiveRange(anchor)
-        if (range.empty) {
+    override fun getAllPoints(dataSource: ChartDataSource): NavigableSet<DataPoint> {
+        return points[dataSource] as? NavigableSet<DataPoint> ?: EMPTY_DATA_POINTS
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    override fun getPoints(dataSource: ChartDataSource, start: Long, end: Long): NavigableSet<DataPoint> {
+        if (start > end) {
             return EMPTY_DATA_POINTS
         }
-        val points = points[dataSource] ?: return EMPTY_DATA_POINTS
 
-        topDataAnchor.value = range.end
+        val points = points[dataSource] ?: return EMPTY_DATA_POINTS
+        topDataAnchor.value = end
         val filteredFromTop = points.headSet(topDataAnchor, true)
 
-        bottomDataAnchor.value = range.start
+        bottomDataAnchor.value = start
         return filteredFromTop.tailSet(bottomDataAnchor, true) as NavigableSet<DataPoint>
+    }
+
+    override fun getCurrentRangePoints(dataSource: ChartDataSource, anchor: Any): NavigableSet<DataPoint> {
+        val range = getActiveRange(anchor)
+        return getPoints(dataSource, range.start, range.end)
     }
 
     override fun getPreviousPointForActiveRange(dataSource: ChartDataSource, anchor: Any): DataPoint? {

@@ -17,6 +17,7 @@ import tech.harmonysoft.oss.leonardo.model.runtime.DataMapper
 import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil
 import tech.harmonysoft.oss.leonardo.view.util.RoundedRectangleDrawer
 import kotlin.math.max
+import kotlin.math.min
 
 class ChartView @JvmOverloads constructor(
     context: Context,
@@ -345,18 +346,32 @@ class ChartView @JvmOverloads constructor(
         } else if (!model.isActive(dataSource)) {
             return
         }
-        val interval = model.getCurrentRangePoints(dataSource, dataAnchor)
+
+        val dataXStart: Long
+        val dataXEnd: Long
+        with(drawData.xAxis.animator) {
+            if (inProgress) {
+                dataXStart = min(rangeFrom.start, rangeTo.start)
+                dataXEnd = max(rangeFrom.end, rangeTo.end)
+            } else {
+                dataXStart = drawData.xAxis.range.start
+                dataXEnd = drawData.xAxis.range.end
+            }
+        }
+
+        val interval = model.getPoints(dataSource, dataXStart, dataXEnd)
 
         val minX = drawData.chartLeft.toFloat()
         val maxX = width.toFloat()
 
         val points = ArrayList<DataPoint>(interval.size + 2)
-        val previous = model.getPreviousPointForActiveRange(dataSource, dataAnchor)
+        val allPoints = model.getAllPoints(dataSource)
+        val previous = previous(dataXStart, allPoints)
         if (previous != null) {
             points.add(previous)
         }
         points.addAll(interval)
-        val next = model.getNextPointForActiveRange(dataSource, dataAnchor)
+        val next = next(dataXEnd, allPoints)
         if (next != null) {
             points.add(next)
         }
