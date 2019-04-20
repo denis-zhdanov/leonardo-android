@@ -41,7 +41,7 @@ class ChartView @JvmOverloads constructor(
     private lateinit var _dataAnchor: Any
 
     private lateinit var config: ChartConfig
-    private lateinit var drawSetup: ChartDrawSetup
+    private lateinit var palette: ChartPalette
     private lateinit var model: ChartModel
     private lateinit var drawData: ChartDrawData
 
@@ -136,9 +136,9 @@ class ChartView @JvmOverloads constructor(
 
     fun apply(config: ChartConfig) {
         this.config = config
-        drawSetup = ChartDrawSetup(config)
+        palette = ChartPalette(config)
         if (::model.isInitialized) {
-            drawData = ChartDrawData(drawSetup = drawSetup,
+            drawData = ChartDrawData(palette = palette,
                                      view = this,
                                      model = model,
                                      config = config)
@@ -153,7 +153,7 @@ class ChartView @JvmOverloads constructor(
         }
         chartModel.addListener(modelListener)
         model = chartModel
-        drawData = ChartDrawData(drawSetup = drawSetup,
+        drawData = ChartDrawData(palette = palette,
                                  view = this,
                                  model = model,
                                  config = config)
@@ -203,7 +203,7 @@ class ChartView @JvmOverloads constructor(
 
     @SuppressLint("DrawAllocation")
     override fun onDraw(canvas: Canvas) {
-        if (!::drawSetup.isInitialized || !::drawData.isInitialized) {
+        if (!::palette.isInitialized || !::drawData.isInitialized) {
             return
         }
 
@@ -217,7 +217,7 @@ class ChartView @JvmOverloads constructor(
 
     private fun drawBackground(canvas: Canvas) {
         if (config.drawBackground) {
-            canvas.drawPaint(drawSetup.backgroundPaint)
+            canvas.drawPaint(palette.backgroundPaint)
         }
     }
 
@@ -238,7 +238,7 @@ class ChartView @JvmOverloads constructor(
         val y = drawData.chartBottom.toFloat()
         val clipBounds = canvas.clipBounds
         if (y <= clipBounds.bottom) {
-            canvas.drawLine(0f, y, width.toFloat(), y, drawSetup.gridPaint)
+            canvas.drawLine(0f, y, width.toFloat(), y, palette.gridPaint)
         }
     }
 
@@ -269,7 +269,7 @@ class ChartView @JvmOverloads constructor(
 
     private fun drawXAxisLabels(canvas: Canvas, range: Range, step: Long, alpha: Int) {
         val unitWidth = width.toFloat() / range.size
-        val paint = drawSetup.xLabelPaint.apply { this.alpha = alpha }
+        val paint = palette.xLabelPaint.apply { this.alpha = alpha }
         var value = range.findFirstStepValue(step)
         var x = drawData.xAxis.visualShift + unitWidth * (value - range.start)
         while (x >= 0 && x < width) {
@@ -309,13 +309,7 @@ class ChartView @JvmOverloads constructor(
                 break
             } else if (y <= drawData.chartBottom) {
                 if (drawGrid) {
-                    canvas.drawLine(0f,
-                                    y,
-                                    width.toFloat(),
-                                    y,
-                                    drawSetup.gridPaint.apply {
-                                        this.alpha = alpha
-                                    })
+                    canvas.drawLine(0f, y, width.toFloat(), y, palette.gridPaint)
                 }
                 val label = drawData.yAxis.valueStrategy.getLabel(value, dataStep)
                 y -= drawData.yAxis.labelPadding
@@ -323,14 +317,7 @@ class ChartView @JvmOverloads constructor(
                     break
                 }
                 if (config.yAxisConfig.drawLabels) {
-                    canvas.drawText(label.data,
-                                    0,
-                                    label.length,
-                                    0f,
-                                    y,
-                                    drawSetup.yLabelPaint.apply {
-                                        this.alpha = alpha
-                                    })
+                    canvas.drawText(label.data, 0, label.length, 0f, y, palette.yLabelPaint)
                     drawData.onYLabel(label)
                 }
             }
@@ -349,7 +336,7 @@ class ChartView @JvmOverloads constructor(
     }
 
     private fun drawPlot(dataSource: ChartDataSource, canvas: Canvas) {
-        val paint = drawSetup.plotPaint.apply {
+        val paint = palette.plotPaint.apply {
             color = dataSource.color
         }
         if (drawData.isAnimationInProgress(dataSource)) {
@@ -475,7 +462,7 @@ class ChartView @JvmOverloads constructor(
             return
         }
 
-        canvas.drawLine(visualX, drawData.chartBottom.toFloat(), visualX, 0f, drawSetup.gridPaint)
+        canvas.drawLine(visualX, drawData.chartBottom.toFloat(), visualX, 0f, palette.gridPaint)
 
         val dataSource2yInfo = mutableMapOf<ChartDataSource, ValueInfo>()
         for (dataSource in dataSources) {
@@ -530,7 +517,7 @@ class ChartView @JvmOverloads constructor(
     }
 
     private fun drawSelectionPlotSign(canvas: Canvas, point: VisualPoint, color: Int) {
-        val paint = drawSetup.plotPaint.apply {
+        val paint = palette.plotPaint.apply {
             this.color = config.backgroundColor
             style = Paint.Style.FILL
         }
@@ -704,8 +691,8 @@ class ChartView @JvmOverloads constructor(
         legendRect = rect
 
         roundedRectangleDrawer.draw(rect,
-                                    { drawSetup.gridPaint },
-                                    { drawSetup.legendBackgroundPaint },
+                                    { palette.gridPaint },
+                                    { palette.legendBackgroundPaint },
                                     LeonardoUtil.DEFAULT_CORNER_RADIUS,
                                     canvas)
         drawLegendTitle(canvas, context)
@@ -719,7 +706,7 @@ class ChartView @JvmOverloads constructor(
                         xText.length,
                         context.leftOnChart + context.horizontalPadding,
                         context.topOnChart + context.titleYShift,
-                        drawSetup.legendTitlePaint)
+                        palette.legendTitlePaint)
     }
 
     private fun drawLegendValues(canvas: Canvas, context: LegendDrawContext) {
@@ -737,11 +724,11 @@ class ChartView @JvmOverloads constructor(
             } else {
                 drawData.yAxis.valueStrategy.getLabel(valueInfo.dataValue, drawData.yAxis.axisStep)
             }
-            canvas.drawText(value.data, 0, value.length, x, valueY, drawSetup.legendValuePaint.apply {
+            canvas.drawText(value.data, 0, value.length, x, valueY, palette.legendValuePaint.apply {
                 color = dataSource.color
             })
 
-            canvas.drawText(dataSource.legend, x, legendY, drawSetup.yLabelPaint.apply {
+            canvas.drawText(dataSource.legend, x, legendY, palette.yLabelPaint.apply {
                 color = dataSource.color
             })
 

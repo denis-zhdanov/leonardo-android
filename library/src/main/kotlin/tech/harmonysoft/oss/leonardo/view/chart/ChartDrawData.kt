@@ -14,7 +14,7 @@ import kotlin.math.max
 import kotlin.math.min
 
 internal class ChartDrawData(
-    drawSetup: ChartDrawSetup,
+    palette: ChartPalette,
     config: ChartConfig,
 
     private val axisStepChooser: AxisStepChooser = AxisStepChooser.INSTANCE,
@@ -23,9 +23,9 @@ internal class ChartDrawData(
     private val model: ChartModel
 ) : DataMapper {
 
-    val xAxis = ChartAxisData(drawSetup.xLabelPaint, config.xAxisConfig, AxisAnimator(view))
-    val yAxis = ChartAxisData(drawSetup.yLabelPaint, config.yAxisConfig, AxisAnimator(view))
-    val legendLabelHeight = TextHeightMeasurer(drawSetup.legendValuePaint).measureVisualSpace("W")
+    val xAxis = ChartAxisData(palette.xLabelPaint, config.xAxisConfig, AxisAnimator(view))
+    val yAxis = ChartAxisData(palette.yLabelPaint, config.yAxisConfig, AxisAnimator(view))
+    val legendLabelHeight = TextHeightMeasurer(palette.legendValuePaint).measureVisualSpace("W")
 
     val chartBottom: Int
         get() {
@@ -45,9 +45,9 @@ internal class ChartDrawData(
 
     private val drawXLabels = config.xAxisConfig.drawAxis || config.xAxisConfig.drawLabels
     private val animationEnabled = config.animationEnabled
-    private val xWidthMeasurer = TextWidthMeasurer { drawSetup.xLabelPaint }
-    private val yWidthMeasurer = TextWidthMeasurer { drawSetup.yLabelPaint }
-    private val legendWidthMeasurer = TextWidthMeasurer { drawSetup.legendValuePaint }
+    private val xWidthMeasurer = TextWidthMeasurer { palette.xLabelPaint }
+    private val yWidthMeasurer = TextWidthMeasurer { palette.yLabelPaint }
+    private val legendWidthMeasurer = TextWidthMeasurer { palette.legendValuePaint }
     private val plotAnimator = PlotAnimator(view)
 
     private var forceRefresh = false

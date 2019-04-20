@@ -4,7 +4,7 @@ import android.graphics.Paint
 import android.graphics.Typeface
 import tech.harmonysoft.oss.leonardo.model.config.chart.ChartConfig
 
-internal class ChartDrawSetup(private val config: ChartConfig) {
+internal class ChartPalette(private val config: ChartConfig) {
 
     private val paint = Paint()
 
@@ -13,7 +13,6 @@ internal class ChartDrawSetup(private val config: ChartConfig) {
             return paint.apply {
                 color = config.backgroundColor
                 style = Paint.Style.FILL
-                alpha = 255
             }
         }
 
@@ -23,7 +22,6 @@ internal class ChartDrawSetup(private val config: ChartConfig) {
                 color = config.gridColor
                 style = Paint.Style.STROKE
                 strokeWidth = config.gridLineWidthInPixels.toFloat()
-                alpha = 255
             }
         }
 
@@ -35,7 +33,6 @@ internal class ChartDrawSetup(private val config: ChartConfig) {
                 strokeWidth = 0f
                 textSize = config.xAxisConfig.labelFontSizeInPixels.toFloat()
                 typeface = Typeface.DEFAULT
-                alpha = 255
             }
         }
 
@@ -47,7 +44,6 @@ internal class ChartDrawSetup(private val config: ChartConfig) {
                 strokeWidth = 0f
                 textSize = config.yAxisConfig.labelFontSizeInPixels.toFloat()
                 typeface = Typeface.DEFAULT
-                alpha = 255
             }
         }
 
@@ -56,7 +52,6 @@ internal class ChartDrawSetup(private val config: ChartConfig) {
             return paint.apply {
                 style = Paint.Style.STROKE
                 strokeWidth = config.plotLineWidthInPixels.toFloat()
-                alpha = 255
             }
         }
 
@@ -65,7 +60,6 @@ internal class ChartDrawSetup(private val config: ChartConfig) {
             return paint.apply {
                 color = config.legendBackgroundColor
                 style = Paint.Style.FILL
-                alpha = 255
             }
         }
 
