@@ -23,8 +23,12 @@ internal class ChartDrawData(
     private val model: ChartModel
 ) : DataMapper {
 
-    val xAxis = ChartAxisData(palette.xLabelPaint, config.xAxisConfig, AxisAnimator(view))
-    val yAxis = ChartAxisData(palette.yLabelPaint, config.yAxisConfig, AxisAnimator(view))
+    val xAxis = ChartAxisData(palette.xLabelPaint,
+                              config.xAxisConfig,
+                              AxisAnimator(view, config.animationDurationMillis))
+    val yAxis = ChartAxisData(palette.yLabelPaint,
+                              config.yAxisConfig,
+                              AxisAnimator(view, config.animationDurationMillis))
     val legendLabelHeight = TextHeightMeasurer(palette.legendValuePaint).measureVisualSpace("W")
 
     val chartBottom: Int
@@ -48,7 +52,7 @@ internal class ChartDrawData(
     private val xWidthMeasurer = TextWidthMeasurer { palette.xLabelPaint }
     private val yWidthMeasurer = TextWidthMeasurer { palette.yLabelPaint }
     private val legendWidthMeasurer = TextWidthMeasurer { palette.legendValuePaint }
-    private val plotAnimator = PlotAnimator(view)
+    private val plotAnimator = PlotAnimator(view, config.animationDurationMillis)
 
     private var forceRefresh = false
     private var lastWidth = 0

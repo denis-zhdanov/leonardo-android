@@ -9,6 +9,7 @@ import tech.harmonysoft.oss.leonardo.model.config.chart.ChartConfig
 import tech.harmonysoft.oss.leonardo.model.config.chart.ChartConfigBuilder
 import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil.getColor
 import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil.getDimensionSizeInPixels
+import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil.getInt
 
 class ChartConfigBuilderImpl : ChartConfigBuilder {
 
@@ -29,6 +30,7 @@ class ChartConfigBuilderImpl : ChartConfigBuilder {
     private var selectionSignRadiusInPixels: Int? = null
     private var legendTextColor: Int? = null
     private var legendBackgroundColor: Int? = null
+    private var animationDurationMillis: Int? = null
     private var context: Context? = null
 
     override fun withXAxisConfig(config: AxisConfig) = apply {
@@ -88,6 +90,10 @@ class ChartConfigBuilderImpl : ChartConfigBuilder {
         enableAnimations = false
     }
 
+    override fun withAnimationDurationMillis(duration: Int)  = apply {
+        animationDurationMillis = duration
+    }
+
     override fun withStyle(style: Int) = apply {
         this.style = style
     }
@@ -144,6 +150,14 @@ class ChartConfigBuilderImpl : ChartConfigBuilder {
             context
         )
 
+        val animationDurationMillis = getInt(
+                "animation duration millis",
+                R.attr.leonardo_animation_duration_millis,
+                animationDurationMillis,
+                style,
+                context
+        )
+
         return ChartConfig(
             xAxisConfig = xAxisConfig,
             yAxisConfig = yAxisConfig,
@@ -157,7 +171,8 @@ class ChartConfigBuilderImpl : ChartConfigBuilder {
             legendBackgroundColor = legendBackgroundColor,
             drawSelection = drawSelection,
             selectionAllowed = allowSelection,
-            animationEnabled = enableAnimations
+            animationEnabled = enableAnimations,
+            animationDurationMillis = animationDurationMillis
         )
     }
 

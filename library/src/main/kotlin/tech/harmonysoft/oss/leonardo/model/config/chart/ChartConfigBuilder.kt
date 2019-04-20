@@ -119,6 +119,8 @@ interface ChartConfigBuilder {
 
     fun disableAnimations(): ChartConfigBuilder
 
+    fun withAnimationDurationMillis(duration: Int): ChartConfigBuilder
+
     fun withStyle(style: Int): ChartConfigBuilder
 
     /**

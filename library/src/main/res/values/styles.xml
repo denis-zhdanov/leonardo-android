@@ -16,6 +16,7 @@
         <item name="leonardo_navigator_chart_active_border_horizontal_size">15dp</item>
         <item name="leonardo_navigator_chart_active_border_vertical_size">3dp</item>
         <item name="leonardo_bar_inactive_background">#80ffffff</item>
+        <item name="leonardo_animation_duration_millis">300</item>
     </style>
 
     <style name="Leonardo.Dark" parent="@android:style/Theme.Black">
@@ -33,6 +34,7 @@
         <item name="leonardo_navigator_chart_active_border_horizontal_size">15dp</item>
         <item name="leonardo_navigator_chart_active_border_vertical_size">3dp</item>
         <item name="leonardo_bar_inactive_background">#80242f3e</item>
+        <item name="leonardo_animation_duration_millis">300</item>
     </style>
 
 

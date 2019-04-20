@@ -3,15 +3,12 @@ package tech.harmonysoft.oss.leonardo.model.util
 import android.content.Context
 import android.graphics.Color
 import android.util.TypedValue
-import tech.harmonysoft.oss.leonardo.view.navigator.NavigatorShowcase
 import tech.harmonysoft.oss.leonardo.view.chart.ChartView
+import tech.harmonysoft.oss.leonardo.view.navigator.NavigatorShowcase
 
 object LeonardoUtil {
 
     const val DEFAULT_CORNER_RADIUS = 20f
-    const val ACTION_START_AUTO_EXPAND_AREA_IN_PIXELS = 15
-    const val ANIMATION_DURATION_MILLIS: Long = 300
-    const val ANIMATION_TICK_FREQUENCY_MILLIS: Long = 20
 
     fun getColor(resourceDescription: String,
                  attributeId: Int,
@@ -73,6 +70,37 @@ object LeonardoUtil {
         val typedArray = context.obtainStyledAttributes(defaultStyle, intArrayOf(attributeId))
         try {
             return typedArray.getDimensionPixelSize(0, -1)
+        } finally {
+            typedArray.recycle()
+        }
+    }
+
+    fun getInt(resourceDescription: String,
+               attributeId: Int,
+               value: Int?,
+               defaultStyle: Int,
+               context: Context?): Int {
+        if (value != null) {
+            return value
+        }
+        if (context != null) {
+            return getInt(context, defaultStyle, attributeId)
+        }
+        throw IllegalStateException("$resourceDescription is undefined")
+    }
+
+    fun getInt(context: Context, defaultStyle: Int, attributeId: Int): Int {
+        // Look up a custom value in app theme first
+        val appTypedValue = TypedValue()
+        val resolved = context.theme.resolveAttribute(attributeId, appTypedValue, true)
+        if (resolved) {
+            return appTypedValue.data
+        }
+
+        // Fallback to library defaults
+        val typedArray = context.obtainStyledAttributes(defaultStyle, intArrayOf(attributeId))
+        try {
+            return typedArray.getInt(0, 300)
         } finally {
             typedArray.recycle()
         }

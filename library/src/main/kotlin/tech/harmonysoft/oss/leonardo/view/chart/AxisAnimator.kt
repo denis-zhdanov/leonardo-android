@@ -4,12 +4,11 @@ import android.animation.ValueAnimator
 import android.view.View
 import android.view.animation.LinearInterpolator
 import tech.harmonysoft.oss.leonardo.model.Range
-import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil
 import kotlin.math.round
 
 class AxisAnimator(
     private val view: View,
-    private val animationDurationMillis: Long = LeonardoUtil.ANIMATION_DURATION_MILLIS
+    private val animationDurationMillis: Int
 ) {
 
     val inProgress: Boolean
@@ -25,7 +24,7 @@ class AxisAnimator(
 
     private val animator = ValueAnimator().apply {
         interpolator = LinearInterpolator()
-        duration = animationDurationMillis
+        duration = animationDurationMillis.toLong()
         addUpdateListener {
             tickAnimation(round(it.animatedValue as Float).toLong())
         }

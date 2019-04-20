@@ -15,5 +15,6 @@ data class ChartConfig(
     val selectionAllowed: Boolean,
     val drawSelection: Boolean,
     val drawBackground: Boolean,
-    val animationEnabled: Boolean
+    val animationEnabled: Boolean,
+    val animationDurationMillis: Int
 )

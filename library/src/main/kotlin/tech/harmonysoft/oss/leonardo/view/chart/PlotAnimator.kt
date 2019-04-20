@@ -4,16 +4,15 @@ import android.animation.ValueAnimator
 import android.view.View
 import android.view.animation.LinearInterpolator
 import tech.harmonysoft.oss.leonardo.model.data.ChartDataSource
-import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil
 
 class PlotAnimator(
     private val view: View,
-    private val animationDurationMillis: Long = LeonardoUtil.ANIMATION_DURATION_MILLIS
+    private val animationDurationMillis: Int
 ) {
 
     private val animator = ValueAnimator().apply {
         interpolator = LinearInterpolator()
-        duration = animationDurationMillis
+        duration = animationDurationMillis.toLong()
         addUpdateListener {
             tickAnimation()
         }
@@ -32,7 +31,7 @@ class PlotAnimator(
 
             val elapsedTimeMs = now - context.startTimeMs
             val totalAlphaDelta = context.finalAlpha - context.initialAlpha
-            val currentAlphaDelta = elapsedTimeMs * totalAlphaDelta / LeonardoUtil.ANIMATION_DURATION_MILLIS
+            val currentAlphaDelta = elapsedTimeMs * totalAlphaDelta / animationDurationMillis
             context.currentAlpha = (context.initialAlpha + currentAlphaDelta).toInt()
             if ((totalAlphaDelta > 0 && context.currentAlpha >= context.finalAlpha)
                 || (totalAlphaDelta < 0 && context.currentAlpha <= context.finalAlpha)
