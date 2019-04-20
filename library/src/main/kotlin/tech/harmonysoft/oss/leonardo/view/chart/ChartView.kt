@@ -16,8 +16,7 @@ import tech.harmonysoft.oss.leonardo.model.runtime.ChartModelListener
 import tech.harmonysoft.oss.leonardo.model.runtime.DataMapper
 import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil
 import tech.harmonysoft.oss.leonardo.view.util.RoundedRectangleDrawer
-import java.util.*
-import kotlin.collections.ArrayList
+import kotlin.math.max
 
 class ChartView @JvmOverloads constructor(
     context: Context,
@@ -25,7 +24,7 @@ class ChartView @JvmOverloads constructor(
     defaultStyle: Int = 0
 ) : View(context, attributes, defaultStyle) {
 
-    val dataAnchor: Any = this
+    val dataAnchor: Any get() = _dataAnchor
     val dataMapper: DataMapper by lazy {
         drawData
     }
@@ -38,6 +37,8 @@ class ChartView @JvmOverloads constructor(
      * Keep own data sources list in order to work with them in lexicographically, e.g. when showing selection legend
      */
     private val dataSources = mutableListOf<ChartDataSource>()
+
+    private lateinit var _dataAnchor: Any
 
     private lateinit var config: ChartConfig
     private lateinit var drawSetup: ChartDrawSetup
@@ -140,25 +141,22 @@ class ChartView @JvmOverloads constructor(
             drawData = ChartDrawData(drawSetup = drawSetup,
                                      view = this,
                                      model = model,
-                                     dataAnchor = dataAnchor,
                                      config = config)
             invalidate()
         }
     }
 
-    fun apply(chartModel: ChartModel) {
+    fun apply(chartModel: ChartModel, dataAnchor: Any? = null) {
+        _dataAnchor = dataAnchor ?: this
         if (::model.isInitialized && model !== chartModel) {
             model.removeListener(modelListener)
         }
         chartModel.addListener(modelListener)
         model = chartModel
-        if (::config.isInitialized) {
-            drawData = ChartDrawData(drawSetup = drawSetup,
-                                     view = this,
-                                     model = model,
-                                     dataAnchor = dataAnchor,
-                                     config = config)
-        }
+        drawData = ChartDrawData(drawSetup = drawSetup,
+                                 view = this,
+                                 model = model,
+                                 config = config)
         refreshDataSources()
         invalidate()
     }
@@ -271,12 +269,11 @@ class ChartView @JvmOverloads constructor(
 
     private fun drawXAxisLabels(canvas: Canvas, range: Range, step: Long, alpha: Int) {
         val unitWidth = width.toFloat() / range.size
-        val labelTextStrategy = config.xAxisConfig.labelTextStrategy
         val paint = drawSetup.xLabelPaint.apply { this.alpha = alpha }
         var value = range.findFirstStepValue(step)
         var x = drawData.xAxis.visualShift + unitWidth * (value - range.start)
         while (x >= 0 && x < width) {
-            val label = labelTextStrategy.getLabel(value, step)
+            val label = config.xAxisConfig.labelTextStrategy.getLabel(value, step)
             canvas.drawText(label.data, 0, label.length, x, height.toFloat(), paint)
             value += step
             x += step * unitWidth
@@ -284,10 +281,6 @@ class ChartView @JvmOverloads constructor(
     }
 
     private fun drawYAxis(canvas: Canvas) {
-        drawYGrid(canvas)
-    }
-
-    private fun drawYGrid(canvas: Canvas) {
         if (!config.yAxisConfig.drawAxis || drawData.yAxis.range.empty) {
             return
         }
@@ -309,8 +302,7 @@ class ChartView @JvmOverloads constructor(
 
     private fun drawYGrid(canvas: Canvas, range: Range, dataStep: Long, alpha: Int) {
         val drawGrid = alpha > 128
-        val firstValue = range.findFirstStepValue(dataStep)
-        var value = firstValue
+        var value = range.findFirstStepValue(dataStep)
         while (true) {
             var y = drawData.dataYToVisualY(value)
             if (y <= 0) {
@@ -339,8 +331,8 @@ class ChartView @JvmOverloads constructor(
                                     drawSetup.yLabelPaint.apply {
                                         this.alpha = alpha
                                     })
+                    drawData.onYLabel(label)
                 }
-                drawData.onYLabel(label)
             }
 
             value += dataStep
@@ -479,13 +471,13 @@ class ChartView @JvmOverloads constructor(
 
         val dataX = model.selectedX
         val visualX = drawData.dataXToVisualX(dataX)
-        if (visualX < 0f || visualX > width) {
+        if (visualX < drawData.chartLeft || visualX > width) {
             return
         }
 
         canvas.drawLine(visualX, drawData.chartBottom.toFloat(), visualX, 0f, drawSetup.gridPaint)
 
-        val dataSource2yInfo = HashMap<ChartDataSource, ValueInfo>()
+        val dataSource2yInfo = mutableMapOf<ChartDataSource, ValueInfo>()
         for (dataSource in dataSources) {
             if (!model.isActive(dataSource)) {
                 continue
@@ -633,7 +625,7 @@ class ChartView @JvmOverloads constructor(
                              selectionVisualX: Float,
                              dataSource2yInfo: Map<ChartDataSource, ValueInfo>): Boolean {
         // Ideally we'd like to show legend above selection
-        val selectionYs = ArrayList<Float>()
+        val selectionYs = mutableListOf<Float>()
         for (valueInfo in dataSource2yInfo.values) {
             selectionYs.add(valueInfo.visualValue)
         }
@@ -662,7 +654,7 @@ class ChartView @JvmOverloads constructor(
                 context.legendWidth = width
             } else {
                 val desiredLeft = selectionVisualX - context.legendWidth * 5f / 28f
-                context.leftOnChart = normalizeLeft(Math.max(0f, desiredLeft), context.legendWidth.toFloat())
+                context.leftOnChart = normalizeLeft(max(0f, desiredLeft), context.legendWidth.toFloat())
             }
             return true
         }
@@ -678,20 +670,20 @@ class ChartView @JvmOverloads constructor(
         if (selectionVisualX + context.horizontalPadding.toFloat() + context.legendWidth.toFloat() <= width) {
             // We can show legend to the right of selected x
             context.leftOnChart = selectionVisualX + context.horizontalPadding
-            context.topOnChart = Math.max(0f, selectionYs[0] - context.legendHeight * 5f / 28f)
+            context.topOnChart = max(0f, selectionYs[0] - context.legendHeight * 5f / 28f)
             return true
         }
 
         if (selectionVisualX - context.horizontalPadding.toFloat() - context.legendWidth.toFloat() >= 0) {
             // We can show legend to the left of selected x
             context.leftOnChart = selectionVisualX - context.horizontalPadding.toFloat() - context.legendWidth.toFloat()
-            context.topOnChart = Math.max(0f, selectionYs[0] - context.legendHeight * 5f / 28f)
+            context.topOnChart = max(0f, selectionYs[0] - context.legendHeight * 5f / 28f)
             return true
         }
 
         // We failed finding a location where legend doesn't hid selection points, let's show it above them.
         context.leftOnChart =
-            normalizeLeft(Math.max(0f, selectionVisualX - context.legendWidth * 5f / 28f),
+            normalizeLeft(max(0f, selectionVisualX - context.legendWidth * 5f / 28f),
                           context.legendWidth.toFloat())
         context.topOnChart = context.verticalPadding.toFloat()
         return true
@@ -701,7 +693,7 @@ class ChartView @JvmOverloads constructor(
         val xToShiftLeft = left + width - this.width
         return if (xToShiftLeft <= 0) {
             left
-        } else Math.max(0f, left - xToShiftLeft)
+        } else max(drawData.chartLeft.toFloat(), left - xToShiftLeft)
     }
 
     private fun doDrawLegend(canvas: Canvas, context: LegendDrawContext) {

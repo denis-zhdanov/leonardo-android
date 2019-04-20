@@ -11,6 +11,7 @@ import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil.getDimensionSizeInP
 
 class AxisConfigBuilderImpl : AxisConfigBuilder {
 
+    private var style = R.style.Leonardo_Light
     private var labelTextStrategy: ValueRepresentationStrategy = DefaultValueRepresentationStrategy.INSTANCE
     private var labelsDisabled: Boolean = false
     private var axisDisabled: Boolean = false
@@ -39,6 +40,10 @@ class AxisConfigBuilderImpl : AxisConfigBuilder {
         labelColor = color
     }
 
+    override fun withStyle(style: Int) = apply {
+        this.style = style
+    }
+
     override fun withContext(context: Context) = apply {
         this.context = context
     }
@@ -49,7 +54,7 @@ class AxisConfigBuilderImpl : AxisConfigBuilder {
                 12 // Dummy value
             } else {
                 context?.let {
-                    getDimensionSizeInPixels(it, R.attr.leonardo_chart_axis_label_text_size)
+                    getDimensionSizeInPixels(it, style, R.attr.leonardo_chart_axis_label_text_size)
                 } ?: throw IllegalStateException("Label font size is undefined")
             }
         }
@@ -59,7 +64,7 @@ class AxisConfigBuilderImpl : AxisConfigBuilder {
                 Color.GRAY // Dummy value
             } else {
                 context?.let {
-                    getColor(it, R.attr.leonardo_chart_axis_label_color)
+                    getColor(it, style, R.attr.leonardo_chart_axis_label_color)
                 } ?: throw IllegalStateException("Axis label color is undefined")
             }
         }

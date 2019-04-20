@@ -1,4 +1,4 @@
-package tech.harmonysoft.oss.leonardo.example.view
+package tech.harmonysoft.oss.leonardo.example.view.dynamic
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -9,9 +9,10 @@ import android.widget.Space
 import androidx.fragment.app.Fragment
 import tech.harmonysoft.oss.leonardo.example.R
 import tech.harmonysoft.oss.leonardo.example.data.ModelHolder
+import tech.harmonysoft.oss.leonardo.example.view.CheckBoxView
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModel
 
-class SettingsFragment : Fragment() {
+class DynamicChartSettingsFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_settings, container).apply {

@@ -1,4 +1,4 @@
-package tech.harmonysoft.oss.leonardo.example.data
+package tech.harmonysoft.oss.leonardo.example.data.input.infinite
 
 import tech.harmonysoft.oss.leonardo.model.DataPoint
 import tech.harmonysoft.oss.leonardo.model.Range

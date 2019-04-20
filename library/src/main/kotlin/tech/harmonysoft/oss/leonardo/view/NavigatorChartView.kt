@@ -23,10 +23,14 @@ class NavigatorChartView @JvmOverloads constructor(
     defaultStyle: Int = 0
 ) : View(context, attributes, defaultStyle) {
 
+    val dataAnchor: Any get() = _dataAnchor
+
+    private val view = ChartView(getContext())
+
     private lateinit var config: NavigatorConfig
     private lateinit var model: ChartModel
-    private val view = ChartView(getContext())
     private lateinit var showCase: NavigatorShowcase
+    lateinit var _dataAnchor: Any
 
     private lateinit var inactiveBackgroundPaint: Paint
     private lateinit var activeBackgroundPaint: Paint
@@ -58,9 +62,10 @@ class NavigatorChartView @JvmOverloads constructor(
         invalidate()
     }
 
-    fun apply(model: ChartModel) {
+    fun apply(model: ChartModel, dataAnchor: Any? = null) {
+        this._dataAnchor = dataAnchor ?: this
         this.model = model
-        view.apply(model)
+        view.apply(model, this._dataAnchor)
         setupListener(model)
         refreshMyRange()
         invalidate()
@@ -73,9 +78,9 @@ class NavigatorChartView @JvmOverloads constructor(
     private fun setupListener(model: ChartModel) {
         model.addListener(object : ChartModelListener {
             override fun onRangeChanged(anchor: Any) {
-                if (anchor === getModelAnchor()) {
+                if (anchor == _dataAnchor) {
                     refreshMyRange()
-                } else if (anchor === showCase.dataAnchor) {
+                } else if (anchor == showCase.dataAnchor) {
                     invalidate()
                 }
             }
@@ -105,19 +110,17 @@ class NavigatorChartView @JvmOverloads constructor(
     }
 
     private fun refreshMyRange() {
-        val navigatorRange = model.getActiveRange(getModelAnchor())
-        model.setActiveRange(navigatorRange, view)
-        val dependencyPointsNumber = Math.max(1, (navigatorRange.size + 1) / 4)
-        val dependencyRangeShift = (navigatorRange.size + 1 - dependencyPointsNumber) / 2
-        val dependencyRangeStart = navigatorRange.start + 1 + dependencyRangeShift
-        val dependencyRange = Range(dependencyRangeStart,
-                                    dependencyRangeStart + dependencyPointsNumber)
+        val navigatorRange = model.getActiveRange(_dataAnchor)
+        if (navigatorRange.empty) {
+            return
+        }
+        model.setActiveRange(navigatorRange, view.dataAnchor)
+        val dependencyPointsNumber = Math.max(1, navigatorRange.size / 4)
+        val dependencyRangeShift = (navigatorRange.size - dependencyPointsNumber) / 2
+        val dependencyRangeStart = navigatorRange.start + dependencyRangeShift
+        val dependencyRange = Range(dependencyRangeStart, dependencyRangeStart + dependencyPointsNumber)
         model.setActiveRange(dependencyRange, showCase.dataAnchor)
         invalidate()
-    }
-
-    private fun getModelAnchor(): Any {
-        return this
     }
 
     private fun mayBeInitialize() {
@@ -125,7 +128,7 @@ class NavigatorChartView @JvmOverloads constructor(
     }
 
     private fun mayBeSetInnerChartDimensions() {
-        if (view.width + 2 != width) {
+        if (view.width != width) {
             view.left = 0
             view.top = 0
             view.right = width
@@ -173,7 +176,7 @@ class NavigatorChartView @JvmOverloads constructor(
             return
         }
 
-        val wholeRange = model.getActiveRange(view)
+        val wholeRange = model.getActiveRange(_dataAnchor)
 
         if (wholeRange.start < activeRange.start) {
             val activeXStart = view.dataMapper.dataXToVisualX(activeRange.start)
@@ -292,7 +295,7 @@ class NavigatorChartView @JvmOverloads constructor(
             }
         } else {
             val showCaseDataRange = model.getActiveRange(showCase.dataAnchor)
-            val myDataRange = model.getActiveRange(getModelAnchor())
+            val myDataRange = model.getActiveRange(_dataAnchor)
             val startRangeVisualX = view.dataMapper.dataXToVisualX(showCaseDataRange.start)
             if (visualX - startRangeVisualX < MIN_WIDTH_IN_PIXELS) {
                 // Don't allow selector to become too narrow
@@ -334,7 +337,7 @@ class NavigatorChartView @JvmOverloads constructor(
     }
 
     private fun getShowCaseVisualRatio(): Float {
-        val navigatorDataRange = model.getActiveRange(getModelAnchor())
+        val navigatorDataRange = model.getActiveRange(_dataAnchor)
         val showCaseDataRange = model.getActiveRange(showCase.dataAnchor)
         return navigatorDataRange.size.toFloat() / showCaseDataRange.size.toFloat()
     }

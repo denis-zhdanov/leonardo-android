@@ -6,15 +6,18 @@ import tech.harmonysoft.oss.leonardo.model.runtime.ChartModel
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModelListener
 import tech.harmonysoft.oss.leonardo.model.util.RangesList
 import java.util.*
+import kotlin.math.max
+import kotlin.math.min
 
 /**
  * @param bufferPagesCount  number of chart data pages to keep in memory. E.g. if `1` is returned,
  *                          then the chart would keep one page before the current interval and one page
  *                          after the current interval
  */
-class ChartModelImpl(private val bufferPagesCount: Int) : ChartModel {
+class ChartModelImpl(private val bufferPagesCount: Int = 3) : ChartModel {
 
-    private val listeners = mutableListOf<ChartModelListener>()
+    private val listeners = mutableListOf<ListenerRecord>()
+    private val autoLoader = ChartDataAutoLoader(this)
 
     private val points = mutableMapOf<ChartDataSource, NavigableSet<WithComparableLongProperty>>()
     private val loadedRanges = mutableMapOf<ChartDataSource, RangesList>()
@@ -27,6 +30,10 @@ class ChartModelImpl(private val bufferPagesCount: Int) : ChartModel {
     private var _bufferRange = Range.EMPTY_RANGE
     private var _hasSelection = false
     private var _selectedX = 0L
+
+    init {
+        addListener(autoLoader)
+    }
 
     override val hasSelection get() = _hasSelection
     override var selectedX: Long
@@ -42,14 +49,14 @@ class ChartModelImpl(private val bufferPagesCount: Int) : ChartModel {
             }
             _hasSelection = true
             _selectedX = value
-            listeners.forEach(ChartModelListener::onSelectionChange)
+            notifyListeners(ChartModelListener::onSelectionChange)
         }
 
     override fun resetSelection() {
         val changed = _hasSelection
         _hasSelection = false
         if (changed) {
-            listeners.forEach(ChartModelListener::onSelectionChange)
+            notifyListeners(ChartModelListener::onSelectionChange)
         }
     }
 
@@ -61,17 +68,16 @@ class ChartModelImpl(private val bufferPagesCount: Int) : ChartModel {
 
     override fun setActiveRange(range: Range, anchor: Any) {
         activeRanges[anchor] = range
-        val newCompoundRange: Range
-        if (compoundActiveRange.empty) {
-            newCompoundRange = range
+        val newCompoundRange = if (compoundActiveRange.empty) {
+            range
         } else {
             var min = Long.MAX_VALUE
             var max = Long.MIN_VALUE
             for (value in activeRanges.values) {
-                min = Math.min(min, value.start)
-                max = Math.max(max, value.end)
+                min = min(min, value.start)
+                max = max(max, value.end)
             }
-            newCompoundRange = Range(min, max)
+            Range(min, max)
         }
 
         if (compoundActiveRange != newCompoundRange) {
@@ -87,15 +93,15 @@ class ChartModelImpl(private val bufferPagesCount: Int) : ChartModel {
             }
         }
 
-        listeners.forEach {
+        notifyListeners {
             it.onRangeChanged(anchor)
         }
     }
 
     private fun refreshBufferRange() {
         _bufferRange = Range(
-            compoundActiveRange.start - bufferPagesCount * (compoundActiveRange.size + 1),
-            compoundActiveRange.end + bufferPagesCount * (compoundActiveRange.size + 1)
+            compoundActiveRange.start - bufferPagesCount.toLong() * compoundActiveRange.size,
+            compoundActiveRange.end + bufferPagesCount.toLong() * compoundActiveRange.size
         )
     }
 
@@ -114,7 +120,7 @@ class ChartModelImpl(private val bufferPagesCount: Int) : ChartModel {
         }
         points[dataSource] = TreeSet(WithComparableLongProperty.COMPARATOR)
         loadedRanges[dataSource] = RangesList()
-        listeners.forEach {
+        notifyListeners {
             it.onDataSourceAdded(dataSource)
         }
     }
@@ -127,7 +133,7 @@ class ChartModelImpl(private val bufferPagesCount: Int) : ChartModel {
         loadedRanges.remove(dataSource)
         activeRanges.remove(dataSource)
         disabledDataSources.remove(dataSource)
-        listeners.forEach {
+        notifyListeners {
             it.onDataSourceRemoved(dataSource)
         }
     }
@@ -138,7 +144,7 @@ class ChartModelImpl(private val bufferPagesCount: Int) : ChartModel {
         }
         val changed = disabledDataSources.add(dataSource)
         if (changed) {
-            listeners.forEach {
+            notifyListeners {
                 it.onDataSourceDisabled(dataSource)
             }
         }
@@ -150,7 +156,7 @@ class ChartModelImpl(private val bufferPagesCount: Int) : ChartModel {
         }
         val changed = disabledDataSources.remove(dataSource)
         if (changed) {
-            listeners.forEach {
+            notifyListeners {
                 it.onDataSourceEnabled(dataSource)
             }
         }
@@ -228,21 +234,38 @@ class ChartModelImpl(private val bufferPagesCount: Int) : ChartModel {
         rangesList.keepOnly(bufferRange)
 
         for (anchor in anchorWithChangedActiveRange) {
-            listeners.forEach {
+            notifyListeners {
                 it.onActiveDataPointsLoaded(anchor)
             }
         }
     }
 
     override fun addListener(listener: ChartModelListener) {
-        listeners.add(listener)
+        listeners.add(ListenerRecord(listener))
     }
 
     override fun removeListener(listener: ChartModelListener) {
-        listeners.remove(listener)
+        listeners.removeAll {
+            it.listener == listener
+        }
+    }
+
+    private fun notifyListeners(action: (ChartModelListener) -> Unit) {
+        listeners.forEach {
+            if (!it.notificationInProgress) {
+                it.notificationInProgress = true
+                try {
+                    action(it.listener)
+                } finally {
+                    it.notificationInProgress = false
+                }
+            }
+        }
     }
 
     companion object {
         private val EMPTY_DATA_POINTS = TreeSet<DataPoint>()
     }
+
+    private data class ListenerRecord(val listener: ChartModelListener, var notificationInProgress: Boolean = false)
 }

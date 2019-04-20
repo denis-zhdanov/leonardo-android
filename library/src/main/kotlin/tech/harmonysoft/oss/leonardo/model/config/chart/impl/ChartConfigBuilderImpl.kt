@@ -12,6 +12,7 @@ import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil.getDimensionSizeInP
 
 class ChartConfigBuilderImpl : ChartConfigBuilder {
 
+    private var style = R.style.Leonardo_Light
     private var drawSelection = true
     private var allowSelection = true
     private var drawBackground = true
@@ -87,6 +88,10 @@ class ChartConfigBuilderImpl : ChartConfigBuilder {
         enableAnimations = false
     }
 
+    override fun withStyle(style: Int) = apply {
+        this.style = style
+    }
+
     override fun withContext(context: Context) = apply {
         this.context = context
     }
@@ -98,31 +103,36 @@ class ChartConfigBuilderImpl : ChartConfigBuilder {
             "Grid line width",
             R.attr.leonardo_chart_grid_width,
             gridLineWidthInPixels,
+            style,
             context
         )
         val backgroundColor = getColor(
             "Chart background color",
             R.attr.leonardo_chart_background_color,
             backgroundColor,
+            style,
             context
         )
-        val gridColor = getColor("Chart grid color", R.attr.leonardo_chart_grid_color, gridColor, context)
+        val gridColor = getColor("Chart grid color", R.attr.leonardo_chart_grid_color, gridColor, style, context)
         val plotLineWidth = getDimensionSizeInPixels(
             "Plot line width",
             R.attr.leonardo_chart_plot_width,
             plotLineWidthInPixels,
+            style,
             context
         )
         val selectionSignRadiusInPixels = getDimensionSizeInPixels(
             "Selection sign radius",
             R.attr.leonardo_chart_selection_sign_radius,
             selectionSignRadiusInPixels,
+            style,
             context
         )
         val legendTitleColor = getColor(
             "Legend text title color",
             R.attr.leonardo_chart_legend_text_title_color,
             legendTextColor,
+            style,
             context
         )
 
@@ -130,6 +140,7 @@ class ChartConfigBuilderImpl : ChartConfigBuilder {
             "Legend background color",
             R.attr.leonardo_chart_legend_background_color,
             legendBackgroundColor,
+            style,
             context
         )
 

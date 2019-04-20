@@ -38,6 +38,8 @@ interface AxisConfigBuilder {
      */
     fun withLabelColor(color: Int): AxisConfigBuilder
 
+    fun withStyle(style: Int): AxisConfigBuilder
+
     /**
      * Applies default values to various graphic elements obtained from the given context's
      * [theme][Context.getTheme].

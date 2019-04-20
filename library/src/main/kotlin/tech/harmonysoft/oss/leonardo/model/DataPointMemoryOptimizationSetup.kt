@@ -28,7 +28,7 @@ fun <T : WithComparableLongProperty> previous(bound: Long, points: NavigableSet<
     return when {
         floor == null -> null
         floor.property < bound -> floor as T
-        else -> points.lower(floor) as T
+        else -> points.lower(floor) as? T
     }
 }
 
@@ -42,13 +42,13 @@ fun <T : WithComparableLongProperty> equalOrLower(bound: Long, points: Navigable
  * @return the smallest element in the given set which is greater than the given bound, if any
  */
 @Suppress("UNCHECKED_CAST")
-fun <T : WithComparableLongProperty>  next(bound: Long, points: NavigableSet<T>): T? {
+fun <T : WithComparableLongProperty> next(bound: Long, points: NavigableSet<T>): T? {
     dataPointAnchorValue = bound
     val ceiling = (points as NavigableSet<WithComparableLongProperty>).ceiling(dataPointAnchor)
     return when {
         ceiling == null -> null
         ceiling.property > bound -> ceiling as T
-        else -> points.higher(ceiling) as T
+        else -> points.higher(ceiling) as? T
     }
 }
 
@@ -58,12 +58,10 @@ interface WithComparableLongProperty {
 
     companion object {
         val COMPARATOR = Comparator<WithComparableLongProperty> { o1, o2 ->
-            if (o1.property < o2.property) {
-                -1
-            } else if (o1.property > o2.property) {
-                1
-            } else {
-                0
+            when {
+                o1.property < o2.property -> -1
+                o1.property > o2.property -> 1
+                else -> 0
             }
         }
     }

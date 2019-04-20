@@ -25,7 +25,7 @@ class PlotAnimator(
         val toRemove = mutableListOf<ChartDataSource>()
         val now = System.currentTimeMillis()
         for ((key, context) in animationDataSourceInfo) {
-            if (now >= context.startTimeMs + LeonardoUtil.ANIMATION_DURATION_MILLIS) {
+            if (now >= context.startTimeMs + animationDurationMillis) {
                 toRemove.add(key)
                 break
             }

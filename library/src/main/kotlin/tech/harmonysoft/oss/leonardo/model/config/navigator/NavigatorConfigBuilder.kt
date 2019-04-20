@@ -12,6 +12,8 @@ interface NavigatorConfigBuilder {
 
     fun withActiveBorderVerticalHeightInPixels(heightInPixels: Int): NavigatorConfigBuilder
 
+    fun withStyle(style: Int): NavigatorConfigBuilder
+
     fun withContext(context: Context): NavigatorConfigBuilder
 
     fun build(): NavigatorConfig

@@ -12,9 +12,10 @@ class ChartDataAutoLoader(private val model: ChartModel) : ChartModelListener {
 
     private val tasks = mutableSetOf<ChartDataLoadTask>()
 
+    private var lastKnownBufferRange = Range.EMPTY_RANGE
+
     init {
         model.addListener(this)
-        mayBeLoadRanges()
     }
 
     override fun onRangeChanged(anchor: Any) {
@@ -41,15 +42,21 @@ class ChartDataAutoLoader(private val model: ChartModel) : ChartModelListener {
     }
 
     private fun mayBeLoadRanges() {
+        val bufferRange = model.bufferRange
+
+        if (bufferRange.empty
+            || (bufferRange.start >= lastKnownBufferRange.start && bufferRange.end <= lastKnownBufferRange.end)
+        ) {
+            return
+        }
+
+        lastKnownBufferRange = bufferRange
+
         for (task in tasks) {
             task.cancel(true)
         }
         tasks.clear()
-        val bufferRange = model.bufferRange
 
-        if (bufferRange.empty) {
-            return
-        }
         for (dataSource in model.registeredDataSources) {
             val loadedRanges = model.getLoadedRanges(dataSource)
             val rangesToLoad = loadedRanges.getMissing(bufferRange)

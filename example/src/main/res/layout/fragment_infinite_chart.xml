@@ -6,12 +6,12 @@
               android:padding="@dimen/app_padding">
 
     <tech.harmonysoft.oss.leonardo.view.chart.ChartView
-            android:id="@+id/chart"
+            android:id="@+id/infinite_chart"
             android:layout_width="match_parent"
             android:layout_height="match_parent"/>
 
     <tech.harmonysoft.oss.leonardo.view.NavigatorChartView
-            android:id="@+id/navigator"
+            android:id="@+id/dynamic_chart_navigator"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/app_padding"/>

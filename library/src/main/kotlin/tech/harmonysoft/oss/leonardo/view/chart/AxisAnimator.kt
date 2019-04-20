@@ -74,8 +74,8 @@ class AxisAnimator(
     }
 
     fun getDataValue(visualValue: Float): Long {
-        val initialValue = rangeFrom.start + visualValue / (visualSize / rangeFrom.size.toFloat())
-        val finalValue = rangeTo.start + visualValue / (visualSize / rangeTo.size.toFloat())
+        val initialValue = rangeFrom.start + visualValue * rangeFrom.size.toFloat() / visualSize.toFloat()
+        val finalValue = rangeTo.start + visualValue * rangeTo.size.toFloat() / visualSize.toFloat()
         return (initialValue + (finalValue - initialValue) * elapsedTimeRatio).toLong()
     }
 }

@@ -9,6 +9,7 @@ import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil.getDimensionSizeInP
 
 class NavigatorConfigBuilderImpl : NavigatorConfigBuilder {
 
+    private var style = R.style.Leonardo_Light
     private var inactiveBackgroundColor: Int? = null
     private var activeBorderColor: Int? = null
     private var activeBackgroundWidthInPixels: Int? = null
@@ -31,6 +32,10 @@ class NavigatorConfigBuilderImpl : NavigatorConfigBuilder {
         activeBackgroundHeightInPixels = heightInPixels
     }
 
+    override fun withStyle(style: Int) = apply {
+        this.style = style
+    }
+
     override fun withContext(context: Context) = apply {
         this.context = context
     }
@@ -40,6 +45,7 @@ class NavigatorConfigBuilderImpl : NavigatorConfigBuilder {
             "Navigator chart background",
             R.attr.leonardo_navigator_chart_background_inactive,
             inactiveBackgroundColor,
+            style,
             context
         )
 
@@ -47,6 +53,7 @@ class NavigatorConfigBuilderImpl : NavigatorConfigBuilder {
             "Navigator chart active border color",
             R.attr.leonardo_navigator_chart_active_border_color,
             activeBorderColor,
+            style,
             context
         )
 
@@ -54,6 +61,7 @@ class NavigatorConfigBuilderImpl : NavigatorConfigBuilder {
             "Navigator chart active border width",
             R.attr.leonardo_navigator_chart_active_border_horizontal_size,
             activeBackgroundWidthInPixels,
+            style,
             context
         )
 
@@ -61,6 +69,7 @@ class NavigatorConfigBuilderImpl : NavigatorConfigBuilder {
             "Navigator chart active border height",
             R.attr.leonardo_navigator_chart_active_border_vertical_size,
             activeBackgroundHeightInPixels,
+            style,
             context
         )
 

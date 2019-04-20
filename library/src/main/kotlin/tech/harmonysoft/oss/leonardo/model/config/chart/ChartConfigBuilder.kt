@@ -119,6 +119,8 @@ interface ChartConfigBuilder {
 
     fun disableAnimations(): ChartConfigBuilder
 
+    fun withStyle(style: Int): ChartConfigBuilder
+
     /**
      * Applies default values to various graphic elements obtained from the given context's
      * [theme][Context.getTheme].

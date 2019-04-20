@@ -3,9 +3,8 @@ package tech.harmonysoft.oss.leonardo.model.util
 import android.content.Context
 import android.graphics.Color
 import android.util.TypedValue
-import tech.harmonysoft.oss.leonardo.R
-import tech.harmonysoft.oss.leonardo.view.chart.ChartView
 import tech.harmonysoft.oss.leonardo.view.NavigatorShowcase
+import tech.harmonysoft.oss.leonardo.view.chart.ChartView
 
 object LeonardoUtil {
 
@@ -14,17 +13,21 @@ object LeonardoUtil {
     const val ANIMATION_DURATION_MILLIS: Long = 300
     const val ANIMATION_TICK_FREQUENCY_MILLIS: Long = 20
 
-    fun getColor(resourceDescription: String, attributeId: Int, value: Int?, context: Context?): Int {
+    fun getColor(resourceDescription: String,
+                 attributeId: Int,
+                 value: Int?,
+                 defaultStyle: Int,
+                 context: Context?): Int {
         if (value != null) {
             return value
         }
         if (context != null) {
-            return getColor(context, attributeId)
+            return getColor(context, defaultStyle, attributeId)
         }
         throw IllegalStateException("$resourceDescription is undefined")
     }
 
-    fun getColor(context: Context, attributeId: Int): Int {
+    fun getColor(context: Context, defaultStyle: Int, attributeId: Int): Int {
         // Look up a custom value in app theme first
         val appTypedValue = TypedValue()
         val resolved = context.theme.resolveAttribute(attributeId, appTypedValue, true)
@@ -36,7 +39,7 @@ object LeonardoUtil {
         }
 
         // Fallback to library defaults
-        val typedArray = context.obtainStyledAttributes(R.style.Leonardo_Light, intArrayOf(attributeId))
+        val typedArray = context.obtainStyledAttributes(defaultStyle, intArrayOf(attributeId))
         try {
             return typedArray.getColor(0, Color.WHITE)
         } finally {
@@ -44,17 +47,21 @@ object LeonardoUtil {
         }
     }
 
-    fun getDimensionSizeInPixels(resourceDescription: String, attributeId: Int, value: Int?, context: Context?): Int {
+    fun getDimensionSizeInPixels(resourceDescription: String,
+                                 attributeId: Int,
+                                 value: Int?,
+                                 defaultStyle: Int,
+                                 context: Context?): Int {
         if (value != null) {
             return value
         }
         if (context != null) {
-            return getDimensionSizeInPixels(context, attributeId)
+            return getDimensionSizeInPixels(context, defaultStyle, attributeId)
         }
         throw IllegalStateException("$resourceDescription is undefined")
     }
 
-    fun getDimensionSizeInPixels(context: Context, attributeId: Int): Int {
+    fun getDimensionSizeInPixels(context: Context, defaultStyle: Int, attributeId: Int): Int {
         // Look up a custom value in app theme first
         val appTypedValue = TypedValue()
         val resolved = context.theme.resolveAttribute(attributeId, appTypedValue, true)
@@ -63,7 +70,7 @@ object LeonardoUtil {
         }
 
         // Fallback to library defaults
-        val typedArray = context.obtainStyledAttributes(R.style.Leonardo_Light, intArrayOf(attributeId))
+        val typedArray = context.obtainStyledAttributes(defaultStyle, intArrayOf(attributeId))
         try {
             return typedArray.getDimensionPixelSize(0, -1)
         } finally {

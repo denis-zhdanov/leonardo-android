@@ -1,12 +1,12 @@
 package tech.harmonysoft.oss.leonardo.view.chart
 
-import android.view.View
 import tech.harmonysoft.oss.leonardo.model.DataPoint
 import tech.harmonysoft.oss.leonardo.model.Range
 import tech.harmonysoft.oss.leonardo.model.VisualPoint
 import tech.harmonysoft.oss.leonardo.model.config.chart.ChartConfig
 import tech.harmonysoft.oss.leonardo.model.data.ChartDataSource
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModel
+import tech.harmonysoft.oss.leonardo.model.runtime.ChartModelListener
 import tech.harmonysoft.oss.leonardo.model.runtime.DataMapper
 import tech.harmonysoft.oss.leonardo.model.text.TextWrapper
 import tech.harmonysoft.oss.leonardo.view.util.*
@@ -19,9 +19,8 @@ internal class ChartDrawData(
 
     private val axisStepChooser: AxisStepChooser = AxisStepChooser.INSTANCE,
 
-    private val view: View,
-    private val model: ChartModel,
-    private val dataAnchor: Any
+    private val view: ChartView,
+    private val model: ChartModel
 ) : DataMapper {
 
     val xAxis = ChartAxisData(drawSetup.xLabelPaint, config.xAxisConfig, AxisAnimator(view))
@@ -52,19 +51,55 @@ internal class ChartDrawData(
     private val plotAnimator = PlotAnimator(view)
 
     private var forceRefresh = false
+    private var lastWidth = 0
+    private var lastHeight = 0
+
+    init {
+        model.addListener(object : ChartModelListener {
+            override fun onRangeChanged(anchor: Any) {
+            }
+
+            override fun onDataSourceEnabled(dataSource: ChartDataSource) {
+            }
+
+            override fun onDataSourceDisabled(dataSource: ChartDataSource) {
+            }
+
+            override fun onDataSourceAdded(dataSource: ChartDataSource) {
+            }
+
+            override fun onDataSourceRemoved(dataSource: ChartDataSource) {
+            }
+
+            override fun onActiveDataPointsLoaded(anchor: Any) {
+                if (anchor == view.dataAnchor) {
+                    forceRefresh = true
+                }
+            }
+
+            override fun onSelectionChange() {
+            }
+        })
+    }
 
     fun refresh() {
-        maxYLabelWidth = 0
+        val currentWidth = view.width
+        val currentHeight = view.height
 
-        val activeXDataRange = model.getActiveRange(dataAnchor)
-        if (!forceRefresh && activeXDataRange == xAxis.range) {
+        val activeXDataRange = model.getActiveRange(view.dataAnchor)
+        if (!forceRefresh && lastWidth == currentWidth && lastHeight == currentHeight
+            && activeXDataRange == xAxis.range
+        ) {
             return
         }
+
+        lastWidth = currentWidth
+        lastHeight = currentHeight
 
         val activeYDataRange = mayBeExpandYRange(getYDataRange())
         refreshAxis(activeYDataRange, chartBottom, yAxis, true)
 
-        refreshAxis(activeXDataRange, view.width - maxYLabelWidth - yAxis.labelPadding, xAxis, false)
+        refreshAxis(activeXDataRange, currentWidth - chartLeft, xAxis, false)
 
         forceRefresh = false
     }
@@ -72,12 +107,13 @@ internal class ChartDrawData(
     private fun refreshAxis(currentValuesRange: Range, availableSize: Int, data: ChartAxisData, yAxis: Boolean) {
         val rescale = (currentValuesRange.size != data.range.size) || (availableSize != data.availableSize)
         val initialRange = data.range
-        val initialStep = data.axisStep
-        val initialSize = data.availableSize
         data.range = currentValuesRange
         if (!rescale) {
             return
         }
+
+        val initialStep = data.axisStep
+        val initialSize = data.availableSize
 
         if (yAxis) {
             maxYLabelWidth = 0
@@ -117,7 +153,7 @@ internal class ChartDrawData(
         var maxY = Long.MIN_VALUE
         model.registeredDataSources.forEach { dataSource ->
             if (model.isActive(dataSource)) {
-                model.getCurrentRangePoints(dataSource, dataAnchor).forEach { dataPoint ->
+                model.getCurrentRangePoints(dataSource, view.dataAnchor).forEach { dataPoint ->
                     minY = min(minY, dataPoint.y)
                     maxY = max(maxY, dataPoint.y)
                 }

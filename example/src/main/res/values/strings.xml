@@ -2,4 +2,6 @@
     <string name="app_name">Leonardo Samples</string>
     <string name="title">Statistics</string>
     <string name="theme_switcher">Switch Theme</string>
+    <string name="chart_selector_static">Static chart</string>
+    <string name="chart_selector_infinite">Infinite chart</string>
 </resources>

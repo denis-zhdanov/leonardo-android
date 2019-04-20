@@ -10,12 +10,16 @@
             android:theme="@style/AppTheme.Light"
             tools:ignore="AllowBackup,GoogleAppIndexingWarning"
             android:icon="@drawable/ic_chart">
-        <activity android:name=".view.ExampleActivity">
+        <activity
+                android:name=".view.ExampleActivity"
+                android:label="@string/title">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
 
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+
         </activity>
     </application>
 

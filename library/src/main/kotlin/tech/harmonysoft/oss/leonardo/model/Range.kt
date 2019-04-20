@@ -6,7 +6,7 @@ package tech.harmonysoft.oss.leonardo.model
 data class Range(val start: Long, val end: Long) {
 
     val empty: Boolean get() = start > end
-    val size: Int get() = (end - start).toInt()
+    val size: Long get() = end - start
 
     fun shift(delta: Long): Range {
         return Range(start + delta, end + delta)
@@ -56,6 +56,6 @@ data class Range(val start: Long, val end: Long) {
     }
 
     companion object {
-        val EMPTY_RANGE = Range(-1, 0)
+        val EMPTY_RANGE = Range(0, -1)
     }
 }
