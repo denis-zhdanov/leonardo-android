@@ -79,6 +79,10 @@ class ExampleActivity : AppCompatActivity() {
     }
 
     private fun mayBeChangeChartContent(chartType: ChartType) {
+        if (chart_content.childCount > 0 && chartType == settingsManager.chartType) {
+            return
+        }
+
         val (viewToShow, menuItemId) = when (chartType) {
             ChartType.INFINITE -> infiniteChartView to R.id.static_chart
             ChartType.STATIC -> staticChartView to R.id.infinite_chart
@@ -130,6 +134,10 @@ class ExampleActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             android.R.id.home -> {
+                navigation.setCheckedItem(when (settingsManager.chartType) {
+                                              ChartType.INFINITE -> R.id.infinite_chart
+                                              ChartType.STATIC -> R.id.static_chart
+                                          })
                 drawer_layout.openDrawer(GravityCompat.START)
                 true
             }
