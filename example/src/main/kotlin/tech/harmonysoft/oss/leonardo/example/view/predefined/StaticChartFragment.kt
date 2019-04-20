@@ -86,6 +86,7 @@ class StaticChartFragment : Fragment() {
             .withContext(context)
             .withXAxisConfigBuilder(LeonardoConfigFactory.newAxisConfigBuilder()
                                         .withStyle(style)
+                                        .withContext(context)
                                         .withLabelTextStrategy(TimeValueRepresentationStrategy.INSTANCE))
             .build()
 

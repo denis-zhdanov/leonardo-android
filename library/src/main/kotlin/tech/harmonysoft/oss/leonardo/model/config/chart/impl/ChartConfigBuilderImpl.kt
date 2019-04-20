@@ -171,6 +171,7 @@ class ChartConfigBuilderImpl : ChartConfigBuilder {
 
         return (builder ?: LeonardoConfigFactory.newAxisConfigBuilder()).apply {
             context?.let {
+                withStyle(style)
                 withContext(it)
             }
         }.build()
