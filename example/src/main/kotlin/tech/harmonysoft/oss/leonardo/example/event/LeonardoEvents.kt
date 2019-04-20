@@ -1,6 +1,5 @@
 package tech.harmonysoft.oss.leonardo.example.event
 
-object LeonardoEvents {
+import tech.harmonysoft.oss.leonardo.example.settings.ActiveTheme
 
-    const val THEME_CHANGED = "theme-changed"
-}
+data class ThemeChangedEvent(val currentTheme: ActiveTheme)

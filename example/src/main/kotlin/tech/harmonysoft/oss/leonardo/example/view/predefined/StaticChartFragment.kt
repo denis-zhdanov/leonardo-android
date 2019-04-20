@@ -1,35 +1,43 @@
 package tech.harmonysoft.oss.leonardo.example.view.predefined
 
-import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.google.common.eventbus.EventBus
+import com.google.common.eventbus.Subscribe
+import tech.harmonysoft.oss.leonardo.example.LeonardoApplication
 import tech.harmonysoft.oss.leonardo.example.R
 import tech.harmonysoft.oss.leonardo.example.data.input.predefined.JsonDataSourceParser
-import tech.harmonysoft.oss.leonardo.example.event.LeonardoEvents
-import tech.harmonysoft.oss.leonardo.example.event.LeonardoKey
+import tech.harmonysoft.oss.leonardo.example.event.ThemeChangedEvent
+import tech.harmonysoft.oss.leonardo.example.settings.SettingsManager
 import tech.harmonysoft.oss.leonardo.model.config.LeonardoConfigFactory
 import tech.harmonysoft.oss.leonardo.model.config.axis.impl.TimeValueRepresentationStrategy
 import tech.harmonysoft.oss.leonardo.model.runtime.impl.ChartModelImpl
 import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil
 import tech.harmonysoft.oss.leonardo.view.NavigatorChartView
 import tech.harmonysoft.oss.leonardo.view.chart.ChartView
+import javax.inject.Inject
 
 class StaticChartFragment : Fragment() {
 
+    @Inject lateinit var eventBus: EventBus
+    @Inject lateinit var settingsManager: SettingsManager
+
     private val chartViews = mutableListOf<Pair<ChartView, NavigatorChartView>>()
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        LeonardoApplication.graph.inject(this)
+        eventBus.register(this)
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_static_chart, container).apply {
             initUi(findViewById(R.id.charts))
-            setupReloadableStyle(context)
         }
     }
 
@@ -43,7 +51,7 @@ class StaticChartFragment : Fragment() {
             chartViews += chart to navigator
 
             navigator.apply(LeonardoUtil.asNavigatorShowCase(chart))
-            applyUiSettings(chart, navigator, R.style.Charts_Light, holder.context)
+            applyUiSettings(chart, navigator, settingsManager.chartStyle, holder.context)
 
             val model = ChartModelImpl()
             chartData.dataSources.forEach {
@@ -77,14 +85,11 @@ class StaticChartFragment : Fragment() {
         navigator.apply(navigatorConfig, chartConfig)
     }
 
-    private fun setupReloadableStyle(context: Context) {
-        LocalBroadcastManager.getInstance(context).registerReceiver(object : BroadcastReceiver() {
-            override fun onReceive(c: Context?, intent: Intent) {
-                val style = intent.getIntExtra(LeonardoKey.CHART_STYLE, R.style.Charts_Light)
-                for ((chart, navigator) in chartViews) {
-                    applyUiSettings(chart, navigator, style, context)
-                }
-            }
-        }, IntentFilter(LeonardoEvents.THEME_CHANGED))
+    @Subscribe
+    fun onThemeChanged(event: ThemeChangedEvent) {
+        val style = settingsManager.chartStyle
+        for ((chart, navigator) in chartViews) {
+            applyUiSettings(chart, navigator, style, context!!)
+        }
     }
 }

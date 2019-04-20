@@ -1,6 +1,7 @@
 plugins {
     id 'com.android.application'
     id 'kotlin-android'
+    id 'kotlin-kapt'
     id 'kotlin-android-extensions'
 }
 
@@ -35,13 +36,25 @@ android {
     }
 }
 
+ext {
+    daggerVersion = '2.22.1'
+}
+
 dependencies {
     implementation project(':library')
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+
     implementation 'androidx.core:core-ktx:1.0.1'
+    implementation 'androidx.multidex:multidex:2.0.1'
     implementation 'androidx.appcompat:appcompat:1.1.0-alpha04'
     implementation 'androidx.recyclerview:recyclerview:1.1.0-alpha04'
     implementation 'androidx.drawerlayout:drawerlayout:1.0.0'
     implementation 'com.google.android.material:material:1.1.0-alpha05'
+
+    implementation 'com.google.guava:guava:27.1-android'
+    implementation "com.google.dagger:dagger:$daggerVersion"
+
+    kapt "com.google.dagger:dagger-compiler:$daggerVersion"
+
 }

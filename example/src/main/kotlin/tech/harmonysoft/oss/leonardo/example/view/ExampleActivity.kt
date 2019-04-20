@@ -1,26 +1,26 @@
 package tech.harmonysoft.oss.leonardo.example.view
 
 import android.annotation.SuppressLint
-import android.content.*
 import android.os.Bundle
 import android.util.TypedValue
 import android.view.MenuItem
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.edit
 import androidx.core.view.GravityCompat
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.google.common.eventbus.EventBus
 import kotlinx.android.synthetic.main.activity_example.*
+import tech.harmonysoft.oss.leonardo.example.LeonardoApplication
 import tech.harmonysoft.oss.leonardo.example.R
-import tech.harmonysoft.oss.leonardo.example.event.LeonardoEvents
-import tech.harmonysoft.oss.leonardo.example.event.LeonardoKey
-import tech.harmonysoft.oss.leonardo.example.settings.PREFERENCE_NAME
-import tech.harmonysoft.oss.leonardo.example.settings.PreferenceKey
-import tech.harmonysoft.oss.leonardo.example.settings.PreferenceValue
+import tech.harmonysoft.oss.leonardo.example.event.ThemeChangedEvent
+import tech.harmonysoft.oss.leonardo.example.settings.*
 import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil
+import javax.inject.Inject
 
 @SuppressLint("InflateParams")
 class ExampleActivity : AppCompatActivity() {
+
+    @Inject lateinit var eventBus: EventBus
+    @Inject lateinit var settingsManager: SettingsManager
 
     private val staticChartView: View by lazy {
         layoutInflater.inflate(R.layout.layout_static_chart, null)
@@ -38,16 +38,20 @@ class ExampleActivity : AppCompatActivity() {
             }
         }
 
-    private val preferences: SharedPreferences get() = getSharedPreferences(PREFERENCE_NAME, Context.MODE_PRIVATE)
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        LeonardoApplication.graph.inject(this)
         setContentView(R.layout.activity_example)
         restoreState()
         setupActionBar()
         initDrawer()
         initThemeSwitcher()
-        initThemeReload()
+
+        setTheme(when (settingsManager.theme) {
+                     ActiveTheme.LIGHT -> R.style.AppTheme_Light
+                     ActiveTheme.DARK -> R.style.AppTheme_Dark
+                 })
+        refreshTheme()
     }
 
     private fun setupActionBar() {
@@ -62,23 +66,22 @@ class ExampleActivity : AppCompatActivity() {
         navigation.setNavigationItemSelectedListener { menuItem ->
             menuItem.isChecked = true
             drawer_layout.closeDrawers()
-            val chartViewType = when (menuItem.itemId) {
-                R.id.static_chart -> PreferenceValue.STATIC_CHART
-                R.id.infinite_chart -> PreferenceValue.INFINITE_CHART
+            val chartType = when (menuItem.itemId) {
+                R.id.static_chart -> ChartType.STATIC
+                R.id.infinite_chart -> ChartType.INFINITE
                 else -> null
             }
-            if (chartViewType != null) {
-                mayBeChangeChartContent(chartViewType)
+            if (chartType != null) {
+                mayBeChangeChartContent(chartType)
             }
             true
         }
     }
 
-    private fun mayBeChangeChartContent(viewType: String) {
-        val viewToShow = if (viewType == PreferenceValue.INFINITE_CHART) {
-            infiniteChartView
-        } else {
-            staticChartView
+    private fun mayBeChangeChartContent(chartType: ChartType) {
+        val (viewToShow, menuItemId) = when (chartType) {
+            ChartType.INFINITE -> infiniteChartView to R.id.static_chart
+            ChartType.STATIC -> staticChartView to R.id.infinite_chart
         }
         if (chart_content.childCount == 0) {
             chart_content.addView(viewToShow)
@@ -87,46 +90,41 @@ class ExampleActivity : AppCompatActivity() {
             chart_content.addView(viewToShow)
         }
 
-        val menuItemId = if (viewType == PreferenceValue.STATIC_CHART) {
-            R.id.static_chart
-        } else {
-            R.id.infinite_chart
-        }
         navigation.menu.findItem(menuItemId).isChecked = true
-
-        preferences.edit {
-            putString(PreferenceKey.ACTIVE_CHART, viewType)
-        }
+        settingsManager.chartType = chartType
     }
 
     private fun initThemeSwitcher() {
         theme_switcher.setOnClickListener {
-            val currentStyle = if (darkThemeActive) {
+            val currentTheme = if (darkThemeActive) {
                 setTheme(R.style.AppTheme_Light)
-                theme_switcher.setImageResource(R.drawable.ic_moon)
-                R.style.Charts_Light
+                ActiveTheme.LIGHT
             } else {
                 setTheme(R.style.AppTheme_Dark)
-                theme_switcher.setImageResource(R.drawable.ic_sun)
-                R.style.Charts_Dark
+                ActiveTheme.DARK
             }
 
-            LocalBroadcastManager.getInstance(this).sendBroadcast(Intent(LeonardoEvents.THEME_CHANGED).apply {
-                putExtra(LeonardoKey.CHART_STYLE, currentStyle)
-            })
+            settingsManager.theme = currentTheme
+
+            refreshTheme()
+
+            eventBus.post(ThemeChangedEvent(currentTheme))
         }
     }
 
-    private fun initThemeReload() {
-        val activity = this
-        LocalBroadcastManager.getInstance(this).registerReceiver(object : BroadcastReceiver() {
-            override fun onReceive(context: Context?, intent: Intent) {
-                val style = intent.getIntExtra(LeonardoKey.CHART_STYLE, R.style.Charts_Light)
-                drawer_layout.setBackgroundColor(LeonardoUtil.getColor(activity, style, android.R.attr.windowBackground))
-                toolbar.setTitleTextColor(LeonardoUtil.getColor(activity, style, R.attr.action_bar_text_color))
-                toolbar.setBackgroundColor(LeonardoUtil.getColor(activity, style, R.attr.action_bar_background_color))
-            }
-        }, IntentFilter(LeonardoEvents.THEME_CHANGED))
+    private fun refreshTheme() {
+        val image = when (settingsManager.theme) {
+            ActiveTheme.LIGHT -> R.drawable.ic_moon
+            ActiveTheme.DARK -> R.drawable.ic_sun
+        }
+        theme_switcher.setImageResource(image)
+        val currentChartStyle = settingsManager.chartStyle
+        drawer_layout.setBackgroundColor(LeonardoUtil.getColor(this,
+                                                               currentChartStyle,
+                                                               android.R.attr.windowBackground))
+        toolbar.setTitleTextColor(LeonardoUtil.getColor(this, currentChartStyle, R.attr.action_bar_text_color))
+        toolbar.setBackgroundColor(LeonardoUtil.getColor(this, currentChartStyle, R.attr.action_bar_background_color))
+
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -144,8 +142,6 @@ class ExampleActivity : AppCompatActivity() {
     }
 
     private fun restoreState() {
-        val viewType = preferences.getString(PreferenceKey.ACTIVE_CHART, PreferenceValue.STATIC_CHART)
-                       ?: PreferenceValue.STATIC_CHART
-        mayBeChangeChartContent(viewType)
+        mayBeChangeChartContent(settingsManager.chartType)
     }
 }
