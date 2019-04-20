@@ -7,8 +7,8 @@
     <color name="action_bar_text_color_light">#ffffffff</color>
     <color name="action_bar_background_dark">#ff212d3b</color>
     <color name="action_bar_text_color_dark">#ffffffff</color>
-    <color name="plot1">#fffe3c30</color>
+    <color name="plot1">#ffe6574f</color>
     <color name="plot2">#ff4bd964</color>
-    <color name="plot3">#ff3497ed</color>
-    <color name="plot4">#fff79e39</color>
+    <color name="plot3">#ff108be3</color>
+    <color name="plot4">#ffdeB93f</color>
 </resources>
