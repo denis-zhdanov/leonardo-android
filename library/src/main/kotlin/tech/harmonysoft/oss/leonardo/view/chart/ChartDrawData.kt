@@ -212,18 +212,18 @@ internal class ChartDrawData(
     override fun dataXToVisualX(dataX: Long): Float {
         refresh()
         return if (xAxis.animator.inProgress) {
-            xAxis.visualShift + xAxis.animator.getVisualValue(dataX)
+            chartLeft + xAxis.visualShift + xAxis.animator.getVisualValue(dataX)
         } else {
-            xAxis.dataValueToVisualValue(dataX)
+            chartLeft + xAxis.dataValueToVisualValue(dataX)
         }
     }
 
     override fun visualXToDataX(visualX: Float): Long {
         refresh()
         return if (xAxis.animator.inProgress) {
-            xAxis.animator.getDataValue(visualX - xAxis.visualShift)
+            xAxis.animator.getDataValue(visualX - chartLeft)
         } else {
-            xAxis.visualValueToDataValue(visualX)
+            xAxis.visualValueToDataValue(visualX - chartLeft)
         }
     }
 

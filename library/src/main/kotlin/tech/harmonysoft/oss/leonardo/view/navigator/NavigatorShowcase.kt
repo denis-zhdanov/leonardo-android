@@ -1,4 +1,4 @@
-package tech.harmonysoft.oss.leonardo.view
+package tech.harmonysoft.oss.leonardo.view.navigator
 
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModel
 

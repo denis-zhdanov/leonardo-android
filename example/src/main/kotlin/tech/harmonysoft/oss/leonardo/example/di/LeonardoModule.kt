@@ -4,6 +4,7 @@ import android.content.Context
 import com.google.common.eventbus.EventBus
 import dagger.Module
 import dagger.Provides
+import tech.harmonysoft.oss.leonardo.example.scroll.ScrollManager
 import tech.harmonysoft.oss.leonardo.example.settings.SettingsManager
 import javax.inject.Singleton
 
@@ -26,5 +27,11 @@ class LeonardoModule(private val context: Context) {
     @Singleton
     fun provideSettingsManager(context: Context): SettingsManager {
         return SettingsManager(context)
+    }
+
+    @Provides
+    @Singleton
+    fun providesScrollManager(): ScrollManager {
+        return ScrollManager()
     }
 }

@@ -1,4 +1,4 @@
-package tech.harmonysoft.oss.leonardo.view
+package tech.harmonysoft.oss.leonardo.view.navigator
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -15,7 +15,7 @@ import tech.harmonysoft.oss.leonardo.model.config.navigator.NavigatorConfig
 import tech.harmonysoft.oss.leonardo.model.data.ChartDataSource
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModel
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModelListener
-import tech.harmonysoft.oss.leonardo.view.NavigatorChartView.ActionType.*
+import tech.harmonysoft.oss.leonardo.view.navigator.NavigatorChartView.ActionType.*
 import tech.harmonysoft.oss.leonardo.view.chart.ChartView
 
 class NavigatorChartView @JvmOverloads constructor(
@@ -25,6 +25,8 @@ class NavigatorChartView @JvmOverloads constructor(
 ) : View(context, attributes, defaultStyle) {
 
     val dataAnchor: Any get() = _dataAnchor
+    var scrollListener: ScrollListener? = null
+
 
     private val view = ChartView(getContext())
 
@@ -283,11 +285,12 @@ class NavigatorChartView @JvmOverloads constructor(
         currentAction = getActionType(visualX)
         if (currentAction != null) {
             previousActionVisualX = visualX
+            scrollListener?.onStarted()
             invalidate()
         }
     }
 
-    private fun move(visualX: Float) {
+    fun move(visualX: Float) {
         val previousVisualX = previousActionVisualX
         previousActionVisualX = visualX
 
@@ -359,6 +362,13 @@ class NavigatorChartView @JvmOverloads constructor(
             x >= endX -> MOVE_ACTIVE_INTERVAL_END
             else -> MOVE_COMPLETE_ACTIVE_INTERVAL
         }
+    }
+
+    fun stopAction() {
+        currentAction = null
+        previousActionVisualX = java.lang.Float.NaN
+        scrollListener?.onStopped()
+        invalidate()
     }
 
     private fun getShowCaseVisualRatio(): Float {

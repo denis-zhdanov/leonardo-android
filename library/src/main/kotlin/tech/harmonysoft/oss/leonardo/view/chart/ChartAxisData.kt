@@ -38,6 +38,6 @@ internal class ChartAxisData(
     }
 
     fun visualValueToDataValue(visualValue: Float): Long {
-        return range.start + round((visualValue - visualShift) / (availableSize.toFloat() * range.size)).toLong()
+        return range.start + round((visualValue - visualShift) / availableSize.toFloat() * range.size).toLong()
     }
 }

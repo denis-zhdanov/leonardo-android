@@ -13,19 +13,22 @@ import tech.harmonysoft.oss.leonardo.example.LeonardoApplication
 import tech.harmonysoft.oss.leonardo.example.R
 import tech.harmonysoft.oss.leonardo.example.data.input.predefined.JsonDataSourceParser
 import tech.harmonysoft.oss.leonardo.example.event.ThemeChangedEvent
+import tech.harmonysoft.oss.leonardo.example.scroll.ScrollManager
 import tech.harmonysoft.oss.leonardo.example.settings.SettingsManager
 import tech.harmonysoft.oss.leonardo.model.config.LeonardoConfigFactory
 import tech.harmonysoft.oss.leonardo.model.config.axis.impl.TimeValueRepresentationStrategy
 import tech.harmonysoft.oss.leonardo.model.runtime.impl.ChartModelImpl
 import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil
-import tech.harmonysoft.oss.leonardo.view.NavigatorChartView
+import tech.harmonysoft.oss.leonardo.view.navigator.NavigatorChartView
 import tech.harmonysoft.oss.leonardo.view.chart.ChartView
+import tech.harmonysoft.oss.leonardo.view.navigator.ScrollListener
 import javax.inject.Inject
 
 class StaticChartFragment : Fragment() {
 
     @Inject lateinit var eventBus: EventBus
     @Inject lateinit var settingsManager: SettingsManager
+    @Inject lateinit var scrollManager: ScrollManager
 
     private val chartViews = mutableListOf<Pair<ChartView, NavigatorChartView>>()
 
@@ -49,6 +52,16 @@ class StaticChartFragment : Fragment() {
             val chart = row.findViewById<ChartView>(R.id.row_chart)
             val navigator = row.findViewById<NavigatorChartView>(R.id.row_navigator)
             chartViews += chart to navigator
+
+            navigator.scrollListener = object : ScrollListener {
+                override fun onStarted() {
+                    scrollManager.scrollOwner = navigator
+                }
+
+                override fun onStopped() {
+                    scrollManager.scrollOwner = null
+                }
+            }
 
             navigator.apply(LeonardoUtil.asNavigatorShowCase(chart))
             applyUiSettings(chart, navigator, settingsManager.chartStyle, holder.context)

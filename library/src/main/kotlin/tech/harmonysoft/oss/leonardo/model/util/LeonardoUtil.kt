@@ -3,7 +3,7 @@ package tech.harmonysoft.oss.leonardo.model.util
 import android.content.Context
 import android.graphics.Color
 import android.util.TypedValue
-import tech.harmonysoft.oss.leonardo.view.NavigatorShowcase
+import tech.harmonysoft.oss.leonardo.view.navigator.NavigatorShowcase
 import tech.harmonysoft.oss.leonardo.view.chart.ChartView
 
 object LeonardoUtil {
