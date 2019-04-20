@@ -3,6 +3,7 @@ package tech.harmonysoft.oss.leonardo.view
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.MotionEvent
@@ -30,7 +31,7 @@ class NavigatorChartView @JvmOverloads constructor(
     private lateinit var config: NavigatorConfig
     private lateinit var model: ChartModel
     private lateinit var showCase: NavigatorShowcase
-    lateinit var _dataAnchor: Any
+    private lateinit var _dataAnchor: Any
 
     private lateinit var inactiveBackgroundPaint: Paint
     private lateinit var activeBackgroundPaint: Paint
@@ -38,6 +39,8 @@ class NavigatorChartView @JvmOverloads constructor(
 
     private var currentAction: ActionType? = null
     private var previousActionVisualX = Float.NaN
+
+    private val borderMarkerWidth: Float get() = config.activeBorderHorizontalWidthInPixels / 5f
 
     fun apply(navigatorConfig: NavigatorConfig, chartConfig: ChartConfig) {
         config = navigatorConfig
@@ -50,15 +53,15 @@ class NavigatorChartView @JvmOverloads constructor(
             .disableAxis()
             .build()
         view.apply(LeonardoConfigFactory.newChartConfigBuilder()
-                        .withConfig(chartConfig)
-                        .withPlotLineWidthInPixels(plotLineWidth)
-                        .disableSelection()
-                        .disableBackground()
-                        .disableAnimations()
-                        .withXAxisConfig(axisConfig)
-                        .withYAxisConfig(axisConfig)
-                        .withContext(context)
-                        .build())
+                       .withConfig(chartConfig)
+                       .withPlotLineWidthInPixels(plotLineWidth)
+                       .disableSelection()
+                       .disableBackground()
+                       .disableAnimations()
+                       .withXAxisConfig(axisConfig)
+                       .withYAxisConfig(axisConfig)
+                       .withContext(context)
+                       .build())
         invalidate()
     }
 
@@ -166,8 +169,8 @@ class NavigatorChartView @JvmOverloads constructor(
         val dx = getNavigatorVisualShift()
         drawInactiveBackground(canvas, dx)
         drawActiveBackground(canvas, dx)
-        drawActiveBorder(canvas, dx)
         view.draw(canvas)
+        drawActiveBorder(canvas, dx)
     }
 
     private fun drawInactiveBackground(canvas: Canvas, dx: Float) {
@@ -214,35 +217,55 @@ class NavigatorChartView @JvmOverloads constructor(
             return
         }
 
+        val borderWidth = config.activeBorderHorizontalWidthInPixels
+
         // Left edge
         val activeXStart = view.dataMapper.dataXToVisualX(activeRange.start)
-        canvas.drawRect(activeXStart + dx,
+        canvas.drawRect(activeXStart + dx - borderWidth,
                         0f,
-                        activeXStart + config.activeBorderHorizontalWidthInPixels,
+                        activeXStart,
                         view.height.toFloat(),
                         activeBorderPaint)
+        drawBorderMarker(activeXStart - borderWidth + (borderWidth - borderMarkerWidth) / 2f, canvas)
 
         // Right edge
         val activeXEnd = view.dataMapper.dataXToVisualX(activeRange.end)
-        canvas.drawRect(activeXEnd + -config.activeBorderHorizontalWidthInPixels + dx,
+        canvas.drawRect(activeXEnd + dx,
                         0f,
-                        activeXEnd + dx,
+                        activeXEnd + borderWidth + dx,
                         view.height.toFloat(),
                         activeBorderPaint)
+        drawBorderMarker(activeXEnd + (borderWidth - borderMarkerWidth) / 2f, canvas)
 
         // Top edge
-        canvas.drawRect(activeXStart + dx,
+        canvas.drawRect(activeXStart + dx - borderWidth,
                         0f,
-                        activeXEnd + dx,
+                        activeXEnd + dx + borderWidth,
                         config.activeBorderVerticalHeightInPixels.toFloat(),
                         activeBorderPaint)
 
         // Bottom edge
-        canvas.drawRect(activeXStart + dx,
+        canvas.drawRect(activeXStart + dx - borderWidth,
                         view.height.toFloat(),
-                        activeXEnd + dx,
+                        activeXEnd + dx + borderWidth,
                         view.height - config.activeBorderVerticalHeightInPixels.toFloat(),
                         activeBorderPaint)
+    }
+
+    private fun drawBorderMarker(left: Float, canvas: Canvas) {
+        val colorToRestore = activeBackgroundPaint.color
+        activeBackgroundPaint.color = Color.WHITE
+
+        val radius = borderMarkerWidth / 2f
+        val height = height
+        val markerHeight = height / 4f
+        val markerTop = (height - markerHeight) / 2f
+        val markerBottom = height - markerTop
+        canvas.drawCircle(left + radius, markerTop + radius, radius, activeBackgroundPaint)
+        canvas.drawCircle(left + radius, markerBottom - radius, radius, activeBackgroundPaint)
+        canvas.drawRect(left, markerTop + radius, left + 2 * radius, markerBottom - radius, activeBackgroundPaint)
+
+        activeBackgroundPaint.color = colorToRestore
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -251,7 +274,7 @@ class NavigatorChartView @JvmOverloads constructor(
         when (action) {
             MotionEvent.ACTION_DOWN -> startAction(event.x)
             MotionEvent.ACTION_MOVE -> move(event.x)
-            MotionEvent.ACTION_UP   -> release(event.x)
+            MotionEvent.ACTION_UP -> release(event.x)
         }
         return true
     }
@@ -324,15 +347,17 @@ class NavigatorChartView @JvmOverloads constructor(
         val dx = getNavigatorVisualShift()
         val startX = view.dataMapper.dataXToVisualX(activeRange.start) + dx
         val endX = view.dataMapper.dataXToVisualX(activeRange.end) + dx
+        val borderWidth = config.activeBorderHorizontalWidthInPixels
 
-        if (x + CLICK_RECOGNITION_ERROR_IN_PIXELS < startX || x - CLICK_RECOGNITION_ERROR_IN_PIXELS > endX) {
+
+        if (x < startX - borderWidth || x > endX + borderWidth) {
             return null
         }
 
         return when {
-            Math.abs(startX - x) < CLICK_RECOGNITION_ERROR_IN_PIXELS -> MOVE_ACTIVE_INTERVAL_START
-            Math.abs(endX - x) < CLICK_RECOGNITION_ERROR_IN_PIXELS   -> MOVE_ACTIVE_INTERVAL_END
-            else                                                     -> MOVE_COMPLETE_ACTIVE_INTERVAL
+            x <= startX -> MOVE_ACTIVE_INTERVAL_START
+            x >= endX -> MOVE_ACTIVE_INTERVAL_END
+            else -> MOVE_COMPLETE_ACTIVE_INTERVAL
         }
     }
 
@@ -353,7 +378,6 @@ class NavigatorChartView @JvmOverloads constructor(
 
     companion object {
         private const val MIN_WIDTH_IN_PIXELS: Long = 40
-        private const val CLICK_RECOGNITION_ERROR_IN_PIXELS: Long = 30
     }
 
     private enum class ActionType {
