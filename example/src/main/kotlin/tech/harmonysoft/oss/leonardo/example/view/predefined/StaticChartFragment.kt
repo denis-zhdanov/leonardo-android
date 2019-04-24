@@ -15,6 +15,7 @@ import tech.harmonysoft.oss.leonardo.example.data.input.predefined.JsonDataSourc
 import tech.harmonysoft.oss.leonardo.example.event.ThemeChangedEvent
 import tech.harmonysoft.oss.leonardo.example.scroll.ScrollManager
 import tech.harmonysoft.oss.leonardo.example.settings.SettingsManager
+import tech.harmonysoft.oss.leonardo.example.util.Util
 import tech.harmonysoft.oss.leonardo.model.config.LeonardoConfigFactory
 import tech.harmonysoft.oss.leonardo.model.config.axis.impl.TimeValueRepresentationStrategy
 import tech.harmonysoft.oss.leonardo.model.runtime.impl.ChartModelImpl
@@ -73,6 +74,8 @@ class StaticChartFragment : Fragment() {
             chart.apply(model)
             navigator.apply(model)
             model.setActiveRange(chartData.xRange, navigator.dataAnchor)
+
+            Util.addSelectors(row.findViewById(R.id.row_settings), model)
 
             row.findViewById<TextView>(R.id.row_title).text = chartData.name
 
