@@ -2,12 +2,10 @@ package tech.harmonysoft.oss.leonardo.view.chart
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.Canvas
-import android.graphics.Paint
-import android.graphics.Path
-import android.graphics.RectF
+import android.graphics.*
 import android.util.AttributeSet
 import android.view.View
+import tech.harmonysoft.oss.leonardo.R
 import tech.harmonysoft.oss.leonardo.model.*
 import tech.harmonysoft.oss.leonardo.model.config.chart.ChartConfig
 import tech.harmonysoft.oss.leonardo.model.data.ChartDataSource
@@ -45,6 +43,8 @@ class ChartView @JvmOverloads constructor(
     private lateinit var palette: ChartPalette
     private lateinit var model: ChartModel
     private lateinit var drawData: ChartDrawData
+
+    private lateinit var noChartsBitmap: Bitmap
 
     private val roundedRectangleDrawer = RoundedRectangleDrawer.INSTANCE
 
@@ -138,12 +138,20 @@ class ChartView @JvmOverloads constructor(
     fun apply(config: ChartConfig) {
         this.config = config
         palette = ChartPalette(config)
+        mayBeInitNoChartsBitmap(config)
         if (::model.isInitialized) {
             drawData = ChartDrawData(palette = palette,
                                      view = this,
                                      model = model,
                                      config = config)
             invalidate()
+        }
+    }
+
+    private fun mayBeInitNoChartsBitmap(config: ChartConfig) {
+        val drawableId = config.noChartsDrawableId
+        if (drawableId != null) {
+            noChartsBitmap = BitmapFactory.decodeResource(resources, drawableId)
         }
     }
 
@@ -331,12 +339,19 @@ class ChartView @JvmOverloads constructor(
     }
 
     private fun drawPlots(canvas: Canvas) {
+        var plotDrawn = false
         for (dataSource in dataSources) {
-            drawPlot(dataSource, canvas)
+            plotDrawn = plotDrawn or drawPlot(dataSource, canvas)
+        }
+
+        if (!plotDrawn && ::noChartsBitmap.isInitialized) {
+            val left = drawData.chartLeft + (width - drawData.chartLeft - noChartsBitmap.width) / 2
+            val top = (drawData.chartBottom - noChartsBitmap.height) / 2
+            canvas.drawBitmap(noChartsBitmap, left.toFloat(), top.toFloat(), null)
         }
     }
 
-    private fun drawPlot(dataSource: ChartDataSource, canvas: Canvas) {
+    private fun drawPlot(dataSource: ChartDataSource, canvas: Canvas): Boolean {
         val paint = palette.plotPaint.apply {
             color = dataSource.color
         }
@@ -344,7 +359,7 @@ class ChartView @JvmOverloads constructor(
             paint.alpha = drawData.getCurrentAlpha(dataSource)
 
         } else if (!model.isActive(dataSource)) {
-            return
+            return false
         }
 
         val dataXStart: Long
@@ -456,6 +471,7 @@ class ChartView @JvmOverloads constructor(
         }
 
         canvas.drawPath(path, paint)
+        return true
     }
 
     private fun calculateLineFormula(p1: VisualPoint, p2: VisualPoint): LineFormula {

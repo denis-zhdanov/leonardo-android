@@ -88,6 +88,7 @@ class StaticChartFragment : Fragment() {
                                         .withStyle(style)
                                         .withContext(context)
                                         .withLabelTextStrategy(TimeValueRepresentationStrategy.INSTANCE))
+            .withNoChartsDrawableId(R.drawable.no_charts)
             .build()
 
         chart.apply(chartConfig)

@@ -31,6 +31,7 @@ class ChartConfigBuilderImpl : ChartConfigBuilder {
     private var legendTextColor: Int? = null
     private var legendBackgroundColor: Int? = null
     private var animationDurationMillis: Int? = null
+    private var noChartDrawableId: Int? = null
     private var context: Context? = null
 
     override fun withXAxisConfig(config: AxisConfig) = apply {
@@ -90,8 +91,12 @@ class ChartConfigBuilderImpl : ChartConfigBuilder {
         enableAnimations = false
     }
 
-    override fun withAnimationDurationMillis(duration: Int)  = apply {
+    override fun withAnimationDurationMillis(duration: Int) = apply {
         animationDurationMillis = duration
+    }
+
+    override fun withNoChartsDrawableId(id: Int?) = apply {
+        noChartDrawableId = id
     }
 
     override fun withStyle(style: Int) = apply {
@@ -106,48 +111,48 @@ class ChartConfigBuilderImpl : ChartConfigBuilder {
         val xAxisConfig = getAxisConfig("X", xAxisConfig, xAxisConfigBuilder)
         val yAxisConfig = getAxisConfig("Y", yAxisConfig, yAxisConfigBuilder)
         val gridLineWidth = getDimensionSizeInPixels(
-            "Grid line width",
-            R.attr.leonardo_chart_grid_width,
-            gridLineWidthInPixels,
-            style,
-            context
+                "Grid line width",
+                R.attr.leonardo_chart_grid_width,
+                gridLineWidthInPixels,
+                style,
+                context
         )
         val backgroundColor = getColor(
-            "Chart background color",
-            R.attr.leonardo_chart_background_color,
-            backgroundColor,
-            style,
-            context
+                "Chart background color",
+                R.attr.leonardo_chart_background_color,
+                backgroundColor,
+                style,
+                context
         )
         val gridColor = getColor("Chart grid color", R.attr.leonardo_chart_grid_color, gridColor, style, context)
         val plotLineWidth = getDimensionSizeInPixels(
-            "Plot line width",
-            R.attr.leonardo_chart_plot_width,
-            plotLineWidthInPixels,
-            style,
-            context
+                "Plot line width",
+                R.attr.leonardo_chart_plot_width,
+                plotLineWidthInPixels,
+                style,
+                context
         )
         val selectionSignRadiusInPixels = getDimensionSizeInPixels(
-            "Selection sign radius",
-            R.attr.leonardo_chart_selection_sign_radius,
-            selectionSignRadiusInPixels,
-            style,
-            context
+                "Selection sign radius",
+                R.attr.leonardo_chart_selection_sign_radius,
+                selectionSignRadiusInPixels,
+                style,
+                context
         )
         val legendTitleColor = getColor(
-            "Legend text title color",
-            R.attr.leonardo_chart_legend_text_title_color,
-            legendTextColor,
-            style,
-            context
+                "Legend text title color",
+                R.attr.leonardo_chart_legend_text_title_color,
+                legendTextColor,
+                style,
+                context
         )
 
         val legendBackgroundColor = getColor(
-            "Legend background color",
-            R.attr.leonardo_chart_legend_background_color,
-            legendBackgroundColor,
-            style,
-            context
+                "Legend background color",
+                R.attr.leonardo_chart_legend_background_color,
+                legendBackgroundColor,
+                style,
+                context
         )
 
         val animationDurationMillis = getInt(
@@ -159,20 +164,21 @@ class ChartConfigBuilderImpl : ChartConfigBuilder {
         )
 
         return ChartConfig(
-            xAxisConfig = xAxisConfig,
-            yAxisConfig = yAxisConfig,
-            drawBackground = drawBackground,
-            gridLineWidthInPixels = gridLineWidth,
-            backgroundColor = backgroundColor,
-            gridColor = gridColor,
-            plotLineWidthInPixels = plotLineWidth,
-            selectionSignRadiusInPixels = selectionSignRadiusInPixels,
-            legendTextTitleColor = legendTitleColor,
-            legendBackgroundColor = legendBackgroundColor,
-            drawSelection = drawSelection,
-            selectionAllowed = allowSelection,
-            animationEnabled = enableAnimations,
-            animationDurationMillis = animationDurationMillis
+                xAxisConfig = xAxisConfig,
+                yAxisConfig = yAxisConfig,
+                drawBackground = drawBackground,
+                gridLineWidthInPixels = gridLineWidth,
+                backgroundColor = backgroundColor,
+                gridColor = gridColor,
+                plotLineWidthInPixels = plotLineWidth,
+                selectionSignRadiusInPixels = selectionSignRadiusInPixels,
+                legendTextTitleColor = legendTitleColor,
+                legendBackgroundColor = legendBackgroundColor,
+                drawSelection = drawSelection,
+                selectionAllowed = allowSelection,
+                animationEnabled = enableAnimations,
+                animationDurationMillis = animationDurationMillis,
+                noChartsDrawableId = noChartDrawableId
         )
     }
 
@@ -201,6 +207,8 @@ class ChartConfigBuilderImpl : ChartConfigBuilder {
             .withPlotLineWidthInPixels(config.plotLineWidthInPixels)
             .withSelectionSignRadiusInPixels(config.selectionSignRadiusInPixels)
             .withLegendTextTitleColor(config.legendTextTitleColor)
+            .withAnimationDurationMillis(config.animationDurationMillis)
+            .withNoChartsDrawableId(noChartDrawableId)
             .withLegendBackgroundColor(config.legendBackgroundColor).apply {
                 if (!config.drawSelection) {
                     disableSelection()

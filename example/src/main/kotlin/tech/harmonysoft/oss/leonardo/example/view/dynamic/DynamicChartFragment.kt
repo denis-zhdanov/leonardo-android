@@ -70,6 +70,7 @@ class DynamicChartFragment : Fragment() {
             .withStyle(style)
             .withContext(context!!)
             .withXAxisConfigBuilder(LeonardoConfigFactory.newAxisConfigBuilder().withStyle(style))
+            .withNoChartsDrawableId(R.drawable.no_charts)
             .build()
 
         chart.apply(chartConfig)

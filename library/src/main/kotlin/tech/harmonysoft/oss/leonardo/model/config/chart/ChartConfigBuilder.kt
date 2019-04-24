@@ -121,6 +121,8 @@ interface ChartConfigBuilder {
 
     fun withAnimationDurationMillis(duration: Int): ChartConfigBuilder
 
+    fun withNoChartsDrawableId(id: Int?): ChartConfigBuilder
+
     fun withStyle(style: Int): ChartConfigBuilder
 
     /**

@@ -62,6 +62,7 @@ class NavigatorChartView @JvmOverloads constructor(
                        .disableAnimations()
                        .withXAxisConfig(axisConfig)
                        .withYAxisConfig(axisConfig)
+                       .withNoChartsDrawableId(null)
                        .withContext(context)
                        .build())
         invalidate()
