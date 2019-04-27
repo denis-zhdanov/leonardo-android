@@ -178,9 +178,8 @@ class ChartInitializer(
 
     @Subscribe
     fun onThemeChanged(event: ThemeChangedEvent) {
-        val style = settingsManager.chartStyle
         for ((chart, navigator, xLabelStrategy) in chartViews) {
-            applyUiSettings(chart, navigator, style, xLabelStrategy, context)
+            applyUiSettings(chart, navigator, event.currentStyle, xLabelStrategy, context)
         }
     }
 }

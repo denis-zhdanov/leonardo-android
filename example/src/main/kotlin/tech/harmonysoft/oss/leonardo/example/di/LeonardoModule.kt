@@ -7,6 +7,7 @@ import dagger.Provides
 import tech.harmonysoft.oss.leonardo.example.scroll.ScrollManager
 import tech.harmonysoft.oss.leonardo.example.settings.SettingsManager
 import tech.harmonysoft.oss.leonardo.example.view.ChartInitializer
+import tech.harmonysoft.oss.leonardo.example.view.SeparatorViewFactory
 import javax.inject.Singleton
 
 @Module
@@ -42,5 +43,11 @@ class LeonardoModule(private val context: Context) {
                                  settingsManager: SettingsManager,
                                  eventBus: EventBus): ChartInitializer {
         return ChartInitializer(scrollManager, settingsManager, eventBus)
+    }
+
+    @Provides
+    @Singleton
+    fun providesSeparatorFactory(settingsManager: SettingsManager, eventBus: EventBus): SeparatorViewFactory {
+        return SeparatorViewFactory(settingsManager, eventBus)
     }
 }

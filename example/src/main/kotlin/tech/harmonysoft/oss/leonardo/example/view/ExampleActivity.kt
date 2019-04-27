@@ -112,7 +112,7 @@ class ExampleActivity : AppCompatActivity() {
 
             refreshTheme()
 
-            eventBus.post(ThemeChangedEvent(currentTheme))
+            eventBus.post(ThemeChangedEvent(currentTheme, settingsManager.chartStyle))
         }
     }
 
