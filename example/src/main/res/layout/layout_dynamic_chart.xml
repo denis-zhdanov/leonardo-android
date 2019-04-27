@@ -6,14 +6,8 @@
         android:layout_height="match_parent">
 
     <fragment
-            android:id="@+id/infinite_chart_fragment"
+            android:id="@+id/dynamic_chart_fragment"
             android:name="tech.harmonysoft.oss.leonardo.example.view.dynamic.DynamicChartFragment"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
-
-    <fragment
-            android:id="@+id/settings_fragment"
-            android:name="tech.harmonysoft.oss.leonardo.example.view.dynamic.DynamicChartSettingsFragment"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
 

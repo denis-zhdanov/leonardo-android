@@ -7,8 +7,8 @@
                 android:id="@+id/static_chart"
                 android:title="@string/chart_selector_static"/>
         <item
-                android:id="@+id/infinite_chart"
-                android:title="@string/chart_selector_infinite"/>
+                android:id="@+id/dynamic_chart"
+                android:title="@string/chart_selector_dynamic"/>
     </group>
 
 </menu>

@@ -26,8 +26,8 @@ class ExampleActivity : AppCompatActivity() {
         layoutInflater.inflate(R.layout.layout_static_chart, null)
     }
 
-    private val infiniteChartView: View by lazy {
-        layoutInflater.inflate(R.layout.layout_infinite_chart, null)
+    private val dynamicChartView: View by lazy {
+        layoutInflater.inflate(R.layout.layout_dynamic_chart, null)
     }
 
     private val darkThemeActive: Boolean
@@ -68,7 +68,7 @@ class ExampleActivity : AppCompatActivity() {
             drawer_layout.closeDrawers()
             val chartType = when (menuItem.itemId) {
                 R.id.static_chart -> ChartType.STATIC
-                R.id.infinite_chart -> ChartType.INFINITE
+                R.id.dynamic_chart -> ChartType.DYNAMIC
                 else -> null
             }
             if (chartType != null) {
@@ -79,13 +79,13 @@ class ExampleActivity : AppCompatActivity() {
     }
 
     private fun mayBeChangeChartContent(chartType: ChartType) {
-        if (chart_content.childCount > 0 && chartType == settingsManager.chartType) {
+        if (chart_content.childCount > 0 && chartType == settingsManager.activeChartType) {
             return
         }
 
         val (viewToShow, menuItemId) = when (chartType) {
-            ChartType.INFINITE -> infiniteChartView to R.id.static_chart
-            ChartType.STATIC -> staticChartView to R.id.infinite_chart
+            ChartType.DYNAMIC -> dynamicChartView to R.id.static_chart
+            ChartType.STATIC -> staticChartView to R.id.dynamic_chart
         }
         if (chart_content.childCount == 0) {
             chart_content.addView(viewToShow)
@@ -95,7 +95,7 @@ class ExampleActivity : AppCompatActivity() {
         }
 
         navigation.menu.findItem(menuItemId).isChecked = true
-        settingsManager.chartType = chartType
+        settingsManager.activeChartType = chartType
     }
 
     private fun initThemeSwitcher() {
@@ -134,8 +134,8 @@ class ExampleActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             android.R.id.home -> {
-                navigation.setCheckedItem(when (settingsManager.chartType) {
-                                              ChartType.INFINITE -> R.id.infinite_chart
+                navigation.setCheckedItem(when (settingsManager.activeChartType) {
+                                              ChartType.DYNAMIC -> R.id.dynamic_chart
                                               ChartType.STATIC -> R.id.static_chart
                                           })
                 drawer_layout.openDrawer(GravityCompat.START)
@@ -150,6 +150,6 @@ class ExampleActivity : AppCompatActivity() {
     }
 
     private fun restoreState() {
-        mayBeChangeChartContent(settingsManager.chartType)
+        mayBeChangeChartContent(settingsManager.activeChartType)
     }
 }

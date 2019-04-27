@@ -2,10 +2,10 @@ package tech.harmonysoft.oss.leonardo.view.chart
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.*
 import android.util.AttributeSet
 import android.view.View
-import tech.harmonysoft.oss.leonardo.R
 import tech.harmonysoft.oss.leonardo.model.*
 import tech.harmonysoft.oss.leonardo.model.config.chart.ChartConfig
 import tech.harmonysoft.oss.leonardo.model.data.ChartDataSource
@@ -206,8 +206,12 @@ class ChartView @JvmOverloads constructor(
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        val edge = View.MeasureSpec.getSize(widthMeasureSpec)
-        setMeasuredDimension(edge, edge)
+        val width = View.MeasureSpec.getSize(widthMeasureSpec)
+        if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
+            setMeasuredDimension(width, width)
+        } else {
+            setMeasuredDimension(width, width / 4)
+        }
     }
 
     @SuppressLint("DrawAllocation")

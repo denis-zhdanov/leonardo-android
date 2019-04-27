@@ -1,5 +1,5 @@
 package tech.harmonysoft.oss.leonardo.example.settings
 
 enum class ChartType {
-    STATIC, INFINITE
+    STATIC, DYNAMIC
 }

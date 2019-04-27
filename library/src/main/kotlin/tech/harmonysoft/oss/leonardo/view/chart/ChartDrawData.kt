@@ -64,15 +64,19 @@ internal class ChartDrawData(
             }
 
             override fun onDataSourceEnabled(dataSource: ChartDataSource) {
+                forceRefresh = true
             }
 
             override fun onDataSourceDisabled(dataSource: ChartDataSource) {
+                forceRefresh = true
             }
 
             override fun onDataSourceAdded(dataSource: ChartDataSource) {
+                forceRefresh = true
             }
 
             override fun onDataSourceRemoved(dataSource: ChartDataSource) {
+                forceRefresh = true
             }
 
             override fun onActiveDataPointsLoaded(anchor: Any) {

@@ -3,5 +3,6 @@
     <string name="title">Statistics</string>
     <string name="theme_switcher">Switch Theme</string>
     <string name="chart_selector_static">Static chart</string>
-    <string name="chart_selector_infinite">Infinite chart</string>
+    <string name="chart_selector_dynamic">Dynamic chart</string>
+    <string name="dynamic_chart_title">Dynamic chart</string>
 </resources>

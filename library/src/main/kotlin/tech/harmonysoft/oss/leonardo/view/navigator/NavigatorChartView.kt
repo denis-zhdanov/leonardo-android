@@ -2,6 +2,7 @@ package tech.harmonysoft.oss.leonardo.view.navigator
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -151,13 +152,12 @@ class NavigatorChartView @JvmOverloads constructor(
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val width = View.MeasureSpec.getSize(widthMeasureSpec)
-        val chartHeight = getChartHeight(width)
 
-        setMeasuredDimension(width, chartHeight)
-    }
-
-    private fun getChartHeight(width: Int): Int {
-        return width / 9
+        if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
+            setMeasuredDimension(width, width / 9)
+        } else {
+            setMeasuredDimension(width, width / 15)
+        }
     }
 
     @SuppressLint("WrongCall")

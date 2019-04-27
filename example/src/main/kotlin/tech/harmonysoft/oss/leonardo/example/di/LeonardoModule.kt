@@ -6,6 +6,7 @@ import dagger.Module
 import dagger.Provides
 import tech.harmonysoft.oss.leonardo.example.scroll.ScrollManager
 import tech.harmonysoft.oss.leonardo.example.settings.SettingsManager
+import tech.harmonysoft.oss.leonardo.example.view.ChartInitializer
 import javax.inject.Singleton
 
 @Module
@@ -13,13 +14,13 @@ class LeonardoModule(private val context: Context) {
 
     @Provides
     @Singleton
-    fun provideContext() : Context {
+    fun provideContext(): Context {
         return context
     }
 
     @Provides
     @Singleton
-    fun provideEventBus() : EventBus {
+    fun provideEventBus(): EventBus {
         return EventBus()
     }
 
@@ -33,5 +34,13 @@ class LeonardoModule(private val context: Context) {
     @Singleton
     fun providesScrollManager(): ScrollManager {
         return ScrollManager()
+    }
+
+    @Provides
+    @Singleton
+    fun providesChartInitializer(scrollManager: ScrollManager,
+                                 settingsManager: SettingsManager,
+                                 eventBus: EventBus): ChartInitializer {
+        return ChartInitializer(scrollManager, settingsManager, eventBus)
     }
 }

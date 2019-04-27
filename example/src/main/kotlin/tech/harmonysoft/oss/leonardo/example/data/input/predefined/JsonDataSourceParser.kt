@@ -5,6 +5,7 @@ import org.json.JSONException
 import org.json.JSONObject
 import tech.harmonysoft.oss.leonardo.model.DataPoint
 import tech.harmonysoft.oss.leonardo.model.Range
+import tech.harmonysoft.oss.leonardo.model.config.axis.impl.TimeValueRepresentationStrategy
 import tech.harmonysoft.oss.leonardo.model.data.ChartDataSource
 import java.io.InputStream
 import java.nio.charset.StandardCharsets
@@ -48,11 +49,11 @@ class JsonDataSourceParser {
             }
         }
 
-    fun parse(input: InputStream): Collection<PredefinedChart> {
+    fun parse(input: InputStream): Collection<ChartData> {
         return parse(String(input.readBytes(), StandardCharsets.UTF_8))
     }
 
-    private fun parse(s: String): Collection<PredefinedChart> {
+    private fun parse(s: String): Collection<ChartData> {
         val legends = Stack<String>().apply {
             addAll(LEGENDS)
         }
@@ -64,7 +65,7 @@ class JsonDataSourceParser {
                 legends.pop()
             }
             val (xRange, dataSources) = parse(it)
-            PredefinedChart(name, xRange, dataSources)
+            ChartData(name, xRange, dataSources, TimeValueRepresentationStrategy.INSTANCE)
         }
     }
 

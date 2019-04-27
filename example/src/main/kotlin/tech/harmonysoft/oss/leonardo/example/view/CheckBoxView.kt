@@ -16,7 +16,11 @@ class CheckBoxView @JvmOverloads constructor(
 
     var color = 0
     var callback: ((Boolean) -> Unit)? = null
-    private var checked = true
+    var checked = true
+        set(value) {
+            field = value
+            invalidate()
+        }
 
     private val paint = Paint()
     private val roundedRectangleDrawer = RoundedRectangleDrawer.INSTANCE
