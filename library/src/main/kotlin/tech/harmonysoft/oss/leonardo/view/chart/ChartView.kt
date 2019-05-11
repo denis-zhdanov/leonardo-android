@@ -37,6 +37,9 @@ class ChartView @JvmOverloads constructor(
      */
     private val dataSources = mutableListOf<ChartDataSource>()
 
+    private val drawContext = PlotDrawContext()
+    private val drawerCallback: (DataPoint) -> Boolean = this::doDraw
+
     private lateinit var _dataAnchor: Any
 
     private lateinit var config: ChartConfig
@@ -344,6 +347,8 @@ class ChartView @JvmOverloads constructor(
 
     private fun drawPlots(canvas: Canvas) {
         var plotDrawn = false
+        drawContext.minVisualX = drawData.chartLeft.toFloat()
+        drawContext.maxVisualX = width.toFloat()
         for (dataSource in dataSources) {
             plotDrawn = plotDrawn or drawPlot(dataSource, canvas)
         }
@@ -378,103 +383,68 @@ class ChartView @JvmOverloads constructor(
             }
         }
 
-        val interval = model.getPoints(dataSource, dataXStart, dataXEnd)
+        drawContext.previousVisualPoint = null
+        drawContext.drawn = false
+        drawContext.path = Path()
+        model.forRangePoints(dataSource,
+                             dataXStart,
+                             dataXEnd,
+                             includePrevious = true,
+                             includeNext = true,
+                             action = drawerCallback)
+        canvas.drawPath(drawContext.path, paint)
+        return drawContext.drawn
+    }
 
-        val minX = drawData.chartLeft.toFloat()
-        val maxX = width.toFloat()
-
-        val points = ArrayList<DataPoint>(interval.size + 2)
-        val allPoints = model.getAllPoints(dataSource)
-        val previous = previous(dataXStart, allPoints)
-        if (previous != null) {
-            points.add(previous)
-        }
-        points.addAll(interval)
-        val next = next(dataXEnd, allPoints)
-        if (next != null) {
-            points.add(next)
-        }
-
-        val path = Path()
-        var first = true
-        var stop = false
-        var previousVisualPoint: VisualPoint? = null
-        var i = 0
-        while (!stop && i < points.size) {
-            val point = points[i]
-            val visualPoint = drawData.dataPointToVisualPoint(point)
-            if (i == 0) {
-                previousVisualPoint = visualPoint
-                i++
-                continue
-            }
-
-            if (previousVisualPoint!!.x < minX && visualPoint.x <= minX) {
-                previousVisualPoint = visualPoint
-                i++
-                continue
-            }
-
-            var x: Float
-            var y: Float
-            if (previousVisualPoint.x < minX) {
-                val formula = calculateLineFormula(previousVisualPoint, visualPoint)
-                x = minX
-                y = formula.getY(x)
-                if (y > drawData.chartBottom) {
-                    y = drawData.chartBottom.toFloat()
-                    x = formula.getX(y)
-                }
-            } else if (visualPoint.x > maxX) {
-                if (first) {
-                    first = false
-                    path.moveTo(previousVisualPoint.x, previousVisualPoint.y)
-                } else {
-                    path.lineTo(previousVisualPoint.x, previousVisualPoint.y)
-                }
-                val formula = calculateLineFormula(previousVisualPoint, visualPoint)
-                x = maxX
-                y = formula.getY(x)
-                if (y > drawData.chartBottom) {
-                    y = drawData.chartBottom.toFloat()
-                    x = formula.getX(y)
-                }
-                stop = true
-            } else {
-                x = previousVisualPoint.x
-                y = previousVisualPoint.y
-            }
-
-            if (first) {
-                first = false
-                path.moveTo(x, y)
-            } else {
-                path.lineTo(x, y)
-            }
-
-            if (!stop && i == points.size - 1) {
-                var endX: Float
-                var endY: Float
-                if (visualPoint.x <= maxX) {
-                    endX = visualPoint.x
-                    endY = visualPoint.y
-                } else {
-                    val formula = calculateLineFormula(previousVisualPoint, visualPoint)
-                    endX = maxX
-                    endY = formula.getY(endX)
-                    if (endY > drawData.chartBottom) {
-                        endY = drawData.chartBottom.toFloat()
-                        endX = formula.getX(endY)
-                    }
-                }
-                path.lineTo(endX, endY)
-            }
-
-            previousVisualPoint = visualPoint
-            i++
+    private fun doDraw(dataPoint: DataPoint): Boolean {
+        val visualPoint = drawData.dataPointToVisualPoint(dataPoint)
+        val previousVisualPoint = drawContext.previousVisualPoint
+        if (previousVisualPoint == null || visualPoint.x < drawContext.minVisualX) {
+            drawContext.previousVisualPoint = visualPoint
+            return true
         }
 
-        canvas.drawPath(path, paint)
+        var x: Float
+        var y: Float
+        if (visualPoint.x > drawContext.maxVisualX) {
+            val formula = calculateLineFormula(previousVisualPoint, visualPoint)
+            x = drawContext.maxVisualX
+            y = formula.getY(x)
+            if (y > drawData.chartBottom) {
+                y = drawData.chartBottom.toFloat()
+                x = formula.getX(y)
+            }
+            if (!drawContext.drawn) {
+                drawContext.path.moveTo(previousVisualPoint.x, previousVisualPoint.y)
+            }
+            drawContext.path.lineTo(x, y)
+            return false
+        }
+
+        if (previousVisualPoint.x < drawContext.minVisualX) {
+            val formula = calculateLineFormula(previousVisualPoint, visualPoint)
+            x = drawContext.minVisualX
+            y = formula.getY(x)
+            if (y > drawData.chartBottom) {
+                y = drawData.chartBottom.toFloat()
+                x = formula.getX(y)
+            }
+            drawContext.path.moveTo(x, y)
+            if (visualPoint.x != x || visualPoint.y != y) {
+                drawContext.path.lineTo(visualPoint.x, visualPoint.y)
+            }
+            drawContext.drawn = true
+            drawContext.previousVisualPoint = visualPoint
+            return true
+        }
+
+        if (!drawContext.drawn) {
+            drawContext.drawn = true
+            drawContext.path.moveTo(previousVisualPoint.x, previousVisualPoint.y)
+        }
+
+        drawContext.path.lineTo(visualPoint.x, visualPoint.y)
+        drawContext.previousVisualPoint = visualPoint
         return true
     }
 
@@ -504,38 +474,22 @@ class ChartView @JvmOverloads constructor(
             if (!model.isActive(dataSource)) {
                 continue
             }
-            val points = model.getCurrentRangePoints(dataSource, dataAnchor)
-            if (points.isEmpty()) {
+
+            val previous = model.getThisOrPrevious(dataSource, model.selectedX)
+
+            val dataY = if (previous == null) {
                 continue
-            }
-
-            val dataY: Long
-
-            val firstDataPoint = points.first()
-            val lastDataPoint = points.last()
-            if (dataX < firstDataPoint.x) {
-                val previousDataPoint =
-                    model.getPreviousPointForActiveRange(dataSource, dataAnchor) ?: continue
-                val formula = calculateLineFormula(VisualPoint(previousDataPoint.x.toFloat(),
-                                                               previousDataPoint.y.toFloat()),
-                                                   VisualPoint(firstDataPoint.x.toFloat(),
-                                                               firstDataPoint.y.toFloat()))
-                dataY = Math.round(formula.getY(dataX.toFloat()).toDouble())
-            } else if (dataX > lastDataPoint.x) {
-                val nextDataPoint = model.getNextPointForActiveRange(dataSource, dataAnchor) ?: continue
-                val formula = calculateLineFormula(VisualPoint(lastDataPoint.x.toFloat(),
-                                                               lastDataPoint.y.toFloat()),
-                                                   VisualPoint(nextDataPoint.x.toFloat(),
-                                                               nextDataPoint.y.toFloat()))
-                dataY = Math.round(formula.getY(dataX.toFloat()).toDouble())
+            } else if (previous.x == model.selectedX) {
+                previous.y
             } else {
-                val equalOrLower = equalOrLower(dataX, points) ?: continue
-                dataY = if (equalOrLower.x == dataX) {
-                    equalOrLower.y
+                val next = model.getThisOrNext(dataSource, model.selectedX)
+                if (next == null) {
+                    continue
                 } else {
-                    val next = next(dataX, points) ?: continue
-                    val formula = calculateLineFormula(VisualPoint(equalOrLower.x.toFloat(), equalOrLower.y.toFloat()),
-                                                       VisualPoint(next.x.toFloat(), next.y.toFloat()))
+                    val formula = calculateLineFormula(VisualPoint(next.x.toFloat(),
+                                                                   next.y.toFloat()),
+                                                       VisualPoint(next.x.toFloat(),
+                                                                   next.y.toFloat()))
                     Math.round(formula.getY(dataX.toFloat()).toDouble())
                 }
             }

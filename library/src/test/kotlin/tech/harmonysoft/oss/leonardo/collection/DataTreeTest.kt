@@ -20,8 +20,8 @@ class DataTreeTest {
     @Test
     fun `when tree is empty then all gets return null`() {
         assertThat(tree.get(1)).isNull()
-        assertThat(tree.getPrevious(1)).isNull()
-        assertThat(tree.getNext(1)).isNull()
+        assertThat(tree.getPreviousKey(1)).isNull()
+        assertThat(tree.getNextKey(1)).isNull()
     }
 
     @Test
@@ -89,13 +89,13 @@ class DataTreeTest {
         (-1..(max + 2)).forEach {
             val expected = keys.lower(it)
             if (expected == null) {
-                assertThat(tree.getPrevious(it))
-                    .describedAs("getPrevious($it) doesn't work correctly when tree contains keys "
+                assertThat(tree.getPreviousKey(it))
+                    .describedAs("getPreviousKey($it) doesn't work correctly when tree contains keys "
                                  + "from 1 to $max with step $step")
                     .isNull()
             } else {
-                assertThat(tree.getPrevious(it))
-                    .describedAs("getPrevious($it) doesn't work correctly when tree contains keys "
+                assertThat(tree.getPreviousKey(it))
+                    .describedAs("getPreviousKey($it) doesn't work correctly when tree contains keys "
                                  + "from 1 to $max with step $step")
                     .isEqualTo(expected)
             }
@@ -122,13 +122,13 @@ class DataTreeTest {
         (-1..(max + 2)).forEach {
             val expected = keys.higher(it)
             if (expected == null) {
-                assertThat(tree.getNext(it))
-                    .describedAs("getNext($it) doesn't work correctly when tree contains keys "
+                assertThat(tree.getNextKey(it))
+                    .describedAs("getNextKey($it) doesn't work correctly when tree contains keys "
                                  + "from 1 to $max with step $step")
                     .isNull()
             } else {
-                assertThat(tree.getNext(it))
-                    .describedAs("getNext($it) doesn't work correctly when tree contains keys "
+                assertThat(tree.getNextKey(it))
+                    .describedAs("getNextKey($it) doesn't work correctly when tree contains keys "
                                  + "from 1 to $max with step $step")
                     .isEqualTo(expected)
             }
@@ -166,23 +166,23 @@ class DataTreeTest {
             assertThat(tree.get(it)).isEqualTo(it.toString())
 
             val expectedGreaterKey = keys.higher(it)
-            val nextDescription = "getNext($it) mismatch in tree ${tree.keys}, built from values " +
+            val nextDescription = "getNextKey($it) mismatch in tree ${tree.keys}, built from values " +
                                   "from 1 to $maxToStore with step $storeStep and removed values " +
                                   "greater than $maxToKeep"
             if (expectedGreaterKey == null) {
-                assertThat(tree.getNext(it)).describedAs(nextDescription).isNull()
+                assertThat(tree.getNextKey(it)).describedAs(nextDescription).isNull()
             } else {
-                assertThat(tree.getNext(it)).describedAs(nextDescription).isEqualTo(expectedGreaterKey)
+                assertThat(tree.getNextKey(it)).describedAs(nextDescription).isEqualTo(expectedGreaterKey)
             }
 
             val expectedLowerKey = keys.lower(it)
-            val previousDescription = "getPrevious($it) mismatch in tree ${tree.keys}, built from values " +
+            val previousDescription = "getPreviousKey($it) mismatch in tree ${tree.keys}, built from values " +
                                       "from 1 to $maxToStore with step $storeStep and removed values " +
                                       "greater than $maxToKeep"
             if (expectedLowerKey == null) {
-                assertThat(tree.getPrevious(it)).describedAs(previousDescription).isNull()
+                assertThat(tree.getPreviousKey(it)).describedAs(previousDescription).isNull()
             } else {
-                assertThat(tree.getPrevious(it)).describedAs(previousDescription).isEqualTo(expectedLowerKey)
+                assertThat(tree.getPreviousKey(it)).describedAs(previousDescription).isEqualTo(expectedLowerKey)
             }
         }
     }
@@ -217,23 +217,23 @@ class DataTreeTest {
             assertThat(tree.get(it)).isEqualTo(it.toString())
 
             val expectedGreaterKey = keys.higher(it)
-            val nextDescription = "getNext($it) mismatch in tree ${tree.keys}, built from values " +
+            val nextDescription = "getNextKey($it) mismatch in tree ${tree.keys}, built from values " +
                                   "from 1 to $maxToStore with step $storeStep and removed values " +
                                   "greater than $maxToKeep"
             if (expectedGreaterKey == null) {
-                assertThat(tree.getNext(it)).describedAs(nextDescription).isNull()
+                assertThat(tree.getNextKey(it)).describedAs(nextDescription).isNull()
             } else {
-                assertThat(tree.getNext(it)).describedAs(nextDescription).isEqualTo(expectedGreaterKey)
+                assertThat(tree.getNextKey(it)).describedAs(nextDescription).isEqualTo(expectedGreaterKey)
             }
 
             val expectedLowerKey = keys.lower(it)
-            val previousDescription = "getPrevious($it) mismatch in tree ${tree.keys}, built from values " +
+            val previousDescription = "getPreviousKey($it) mismatch in tree ${tree.keys}, built from values " +
                                   "from 1 to $maxToStore with step $storeStep and removed values " +
                                   "greater than $maxToKeep"
             if (expectedLowerKey == null) {
-                assertThat(tree.getPrevious(it)).describedAs(previousDescription).isNull()
+                assertThat(tree.getPreviousKey(it)).describedAs(previousDescription).isNull()
             } else {
-                assertThat(tree.getPrevious(it)).describedAs(previousDescription).isEqualTo(expectedLowerKey)
+                assertThat(tree.getPreviousKey(it)).describedAs(previousDescription).isEqualTo(expectedLowerKey)
             }
         }
     }

@@ -11,7 +11,6 @@ import tech.harmonysoft.oss.leonardo.model.runtime.DataMapper
 import tech.harmonysoft.oss.leonardo.model.text.TextWrapper
 import tech.harmonysoft.oss.leonardo.view.util.*
 import kotlin.math.max
-import kotlin.math.min
 
 internal class ChartDrawData(
     palette: ChartPalette,
@@ -53,10 +52,14 @@ internal class ChartDrawData(
     private val yWidthMeasurer = TextWidthMeasurer { palette.yLabelPaint }
     private val legendWidthMeasurer = TextWidthMeasurer { palette.legendValuePaint }
     private val plotAnimator = PlotAnimator(view, config.animationDurationMillis)
+    private val yRangeUpdater: (DataPoint) -> Boolean = this::updateYDataRange
 
     private var forceRefresh = false
     private var lastWidth = 0
     private var lastHeight = 0
+
+    private var minY = Long.MAX_VALUE
+    private var maxY = Long.MIN_VALUE
 
     init {
         model.addListener(object : ChartModelListener {
@@ -152,15 +155,23 @@ internal class ChartDrawData(
         }
     }
 
+    private fun updateYDataRange(point: DataPoint): Boolean {
+        if (point.y > maxY) {
+            maxY = point.y
+        }
+        if (point.y < minY) {
+            minY = point.y
+        }
+        return true
+    }
+
     private fun getYDataRange(): Range {
-        var minY = Long.MAX_VALUE
-        var maxY = Long.MIN_VALUE
+        minY = Long.MAX_VALUE
+        maxY = Long.MIN_VALUE
+        val (start, end) = model.getActiveRange(view.dataAnchor)
         model.registeredDataSources.forEach { dataSource ->
             if (model.isActive(dataSource)) {
-                model.getCurrentRangePoints(dataSource, view.dataAnchor).forEach { dataPoint ->
-                    minY = min(minY, dataPoint.y)
-                    maxY = max(maxY, dataPoint.y)
-                }
+                model.forRangePoints(dataSource = dataSource, start = start, end = end, action = yRangeUpdater)
             }
         }
         return Range(minY, maxY)

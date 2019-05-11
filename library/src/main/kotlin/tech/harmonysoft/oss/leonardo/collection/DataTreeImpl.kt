@@ -7,10 +7,10 @@ import kotlin.math.max
  * An AVL tree which assumes that it's accessed only from a single thread at the time and that the access
  * is iteration-like:
  *
- *   1. [getPrevious] (returns, say, *k1*)
- *   2. [getNext(k1)][getNext] (returns *k2*)
- *   3. [getNext(k2)][getNext] (returns *k3*)
- *   4. [getNext(k3)][getNext] (returns *k4*)
+ *   1. [getPreviousKey] (returns, say, *k1*)
+ *   2. [getNextKey(k1)][getNextKey] (returns *k2*)
+ *   3. [getNextKey(k2)][getNextKey] (returns *k3*)
+ *   4. [getNextKey(k3)][getNextKey] (returns *k4*)
  *   5. etc
  *
  * It caches last call's results and tries re-using them on subsequent calls.
@@ -19,6 +19,9 @@ class DataTreeImpl<K, V>(private val comparator: Comparator<K>) : DataTree<K, V>
 
     private var root: Entry<K, V>? = null
     private var cached: Entry<K, V>? = null
+
+    override val empty: Boolean
+        get() = root == null
 
     override val keys: Set<K>
         get() {
@@ -35,6 +38,32 @@ class DataTreeImpl<K, V>(private val comparator: Comparator<K>) : DataTree<K, V>
                 entry.right?.let { toProcess += it }
             }
             return result
+        }
+
+    override val first: V?
+        get() {
+            var entry: Entry<K, V>? = root
+            while (entry != null) {
+                if (entry.left != null) {
+                    entry = entry.left
+                } else {
+                    return entry.value
+                }
+            }
+            return null
+        }
+
+    override val last: V?
+        get() {
+            var entry: Entry<K, V>? = root
+            while (entry != null) {
+                if (entry.right != null) {
+                    entry = entry.right
+                } else {
+                    return entry.value
+                }
+            }
+            return null
         }
 
     override fun get(key: K): V? {
@@ -61,7 +90,7 @@ class DataTreeImpl<K, V>(private val comparator: Comparator<K>) : DataTree<K, V>
         return null
     }
 
-    override fun getPrevious(key: K): K? {
+    override fun getPreviousKey(key: K): K? {
         val c = cached
         var entry: Entry<K, V>? = null
         if (c != null && comparator.compare(key, c.key) == 0) {
@@ -116,7 +145,12 @@ class DataTreeImpl<K, V>(private val comparator: Comparator<K>) : DataTree<K, V>
         }
     }
 
-    override fun getNext(key: K): K? {
+    override fun getPreviousValue(key: K): V? {
+        val previousKey = getPreviousKey(key) ?: return null
+        return get(previousKey)
+    }
+
+    override fun getNextKey(key: K): K? {
         val c = cached
         var entry: Entry<K, V>? = null
         if (c != null && comparator.compare(key, c.key) == 0) {
@@ -150,6 +184,11 @@ class DataTreeImpl<K, V>(private val comparator: Comparator<K>) : DataTree<K, V>
             cached = result
             result.key
         }
+    }
+
+    override fun getNextValue(key: K): V? {
+        val nextKey = getNextKey(key) ?: return null
+        return get(nextKey)
     }
 
     override fun put(key: K, value: V) {

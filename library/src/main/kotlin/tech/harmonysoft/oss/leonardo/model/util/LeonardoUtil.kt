@@ -3,12 +3,22 @@ package tech.harmonysoft.oss.leonardo.model.util
 import android.content.Context
 import android.graphics.Color
 import android.util.TypedValue
+import tech.harmonysoft.oss.leonardo.collection.DataTree
+import tech.harmonysoft.oss.leonardo.model.DataPoint
 import tech.harmonysoft.oss.leonardo.view.chart.ChartView
 import tech.harmonysoft.oss.leonardo.view.navigator.NavigatorShowcase
 
 object LeonardoUtil {
 
     const val DEFAULT_CORNER_RADIUS = 20f
+
+    val LONG_COMPARATOR = Comparator<Long> { l1, l2 ->
+        when {
+            l1 < l2 -> -1
+            l1 > l2 -> 1
+            else -> 0
+        }
+    }
 
     fun getColor(resourceDescription: String,
                  attributeId: Int,
@@ -118,4 +128,32 @@ object LeonardoUtil {
             }
         }
     }
+
+    fun forPoints(points: DataTree<Long, DataPoint>,
+                  start: Long,
+                  end: Long,
+                  includePrevious: Boolean = false,
+                  includeNext: Boolean = false,
+                  action: (DataPoint) -> Boolean) {
+        var point: DataPoint? = if (includePrevious) {
+            points.getPreviousValue(start) ?: points.get(start)
+        } else {
+            points.get(start)
+        } ?: points.getNextValue(start) ?: return
+
+        while (point != null) {
+            if (point.x > end) {
+                if (includeNext) {
+                    action(point)
+                }
+                return
+            }
+            val shouldContinue = action(point)
+            if (!shouldContinue) {
+                return
+            }
+            point = points.getNextValue(point.x)
+        }
+    }
+
 }

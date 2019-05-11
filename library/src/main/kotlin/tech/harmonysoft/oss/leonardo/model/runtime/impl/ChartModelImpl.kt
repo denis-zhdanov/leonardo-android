@@ -1,11 +1,15 @@
 package tech.harmonysoft.oss.leonardo.model.runtime.impl
 
-import tech.harmonysoft.oss.leonardo.model.*
+import tech.harmonysoft.oss.leonardo.collection.DataTree
+import tech.harmonysoft.oss.leonardo.collection.DataTreeImpl
+import tech.harmonysoft.oss.leonardo.model.DataPoint
+import tech.harmonysoft.oss.leonardo.model.Range
 import tech.harmonysoft.oss.leonardo.model.data.ChartDataSource
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModel
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModelListener
+import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil
+import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil.LONG_COMPARATOR
 import tech.harmonysoft.oss.leonardo.model.util.RangesList
-import java.util.*
 import kotlin.math.max
 import kotlin.math.min
 
@@ -19,12 +23,10 @@ class ChartModelImpl(private val bufferPagesCount: Int = 3) : ChartModel {
     private val listeners = mutableListOf<ListenerRecord>()
     private val autoLoader = ChartDataAutoLoader(this)
 
-    private val points = mutableMapOf<ChartDataSource, NavigableSet<WithComparableLongProperty>>()
+    private val points = mutableMapOf<ChartDataSource, DataTree<Long, DataPoint>>()
     private val loadedRanges = mutableMapOf<ChartDataSource, RangesList>()
     private val activeRanges = mutableMapOf<Any, Range>()
     private val disabledDataSources = mutableSetOf<ChartDataSource>()
-    private val bottomDataAnchor = DataPointAnchor()
-    private val topDataAnchor = DataPointAnchor()
 
     private var compoundActiveRange = Range.EMPTY_RANGE
     private var _bufferRange = Range.EMPTY_RANGE
@@ -88,8 +90,8 @@ class ChartModelImpl(private val bufferPagesCount: Int = 3) : ChartModel {
                 rangesList.keepOnly(bufferRange)
             }
             for (points in points.values) {
-                points.tailSet(DataPoint(bufferRange.end, 0), false).clear()
-                points.headSet(DataPoint(bufferRange.start, 0), false).clear()
+                points.removeLowerThen(bufferRange.start)
+                points.removeGreaterThen(bufferRange.end)
             }
         }
 
@@ -118,7 +120,7 @@ class ChartModelImpl(private val bufferPagesCount: Int = 3) : ChartModel {
                 + "data sources: ${points.keys})"
             )
         }
-        points[dataSource] = TreeSet(WithComparableLongProperty.COMPARATOR)
+        points[dataSource] = DataTreeImpl(LONG_COMPARATOR)
         loadedRanges[dataSource] = RangesList()
         notifyListeners {
             it.onDataSourceAdded(dataSource)
@@ -171,46 +173,29 @@ class ChartModelImpl(private val bufferPagesCount: Int = 3) : ChartModel {
         return rangesList != null && rangesList.contains(range)
     }
 
-    @Suppress("UNCHECKED_CAST")
-    override fun getAllPoints(dataSource: ChartDataSource): NavigableSet<DataPoint> {
-        return points[dataSource] as? NavigableSet<DataPoint> ?: EMPTY_DATA_POINTS
+    override fun getThisOrPrevious(dataSource: ChartDataSource, x: Long): DataPoint? {
+        val dataSourcePoints = points[dataSource] ?: return null
+        return dataSourcePoints.get(x) ?: dataSourcePoints.getPreviousValue(x)
     }
 
-    @Suppress("UNCHECKED_CAST")
-    override fun getPoints(dataSource: ChartDataSource, start: Long, end: Long): NavigableSet<DataPoint> {
-        if (start > end) {
-            return EMPTY_DATA_POINTS
-        }
-
-        val points = points[dataSource] ?: return EMPTY_DATA_POINTS
-        topDataAnchor.value = end
-        val filteredFromTop = points.headSet(topDataAnchor, true)
-
-        bottomDataAnchor.value = start
-        return filteredFromTop.tailSet(bottomDataAnchor, true) as NavigableSet<DataPoint>
+    override fun getThisOrNext(dataSource: ChartDataSource, x: Long): DataPoint? {
+        val dataSourcePoints = points[dataSource] ?: return null
+        return dataSourcePoints.get(x) ?: dataSourcePoints.getNextValue(x)
     }
 
-    override fun getCurrentRangePoints(dataSource: ChartDataSource, anchor: Any): NavigableSet<DataPoint> {
-        val range = getActiveRange(anchor)
-        return getPoints(dataSource, range.start, range.end)
-    }
-
-    override fun getPreviousPointForActiveRange(dataSource: ChartDataSource, anchor: Any): DataPoint? {
-        val range = getActiveRange(anchor)
-        if (range.empty) {
-            return null
-        }
-        val points = points[dataSource] ?: return null
-        return previous(range.start, points) as? DataPoint
-    }
-
-    override fun getNextPointForActiveRange(dataSource: ChartDataSource, anchor: Any): DataPoint? {
-        val range = getActiveRange(anchor)
-        if (range.empty) {
-            return null
-        }
-        val points = points[dataSource] ?: return null
-        return next(range.end, points) as? DataPoint
+    override fun forRangePoints(dataSource: ChartDataSource,
+                                start: Long,
+                                end: Long,
+                                includePrevious: Boolean,
+                                includeNext: Boolean,
+                                action: (DataPoint) -> Boolean) {
+        val dataSourcePoints = points[dataSource] ?: return
+        LeonardoUtil.forPoints(points = dataSourcePoints,
+                               start = start,
+                               end = end,
+                               includePrevious = includePrevious,
+                               includeNext = includeNext,
+                               action = action)
     }
 
     override fun getLoadedRanges(dataSource: ChartDataSource): RangesList {
@@ -231,7 +216,7 @@ class ChartModelImpl(private val bufferPagesCount: Int = 3) : ChartModel {
                 continue
             }
 
-            dataSourcePoints += point
+            dataSourcePoints.put(point.x, point)
             for ((key, value) in activeRanges) {
                 if (value.contains(point.x)) {
                     anchorWithChangedActiveRange.add(key)
@@ -270,10 +255,6 @@ class ChartModelImpl(private val bufferPagesCount: Int = 3) : ChartModel {
                 }
             }
         }
-    }
-
-    companion object {
-        private val EMPTY_DATA_POINTS = TreeSet<DataPoint>()
     }
 
     private data class ListenerRecord(val listener: ChartModelListener, var notificationInProgress: Boolean = false)

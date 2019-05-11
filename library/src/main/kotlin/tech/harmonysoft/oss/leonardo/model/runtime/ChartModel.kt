@@ -4,7 +4,6 @@ import tech.harmonysoft.oss.leonardo.model.DataPoint
 import tech.harmonysoft.oss.leonardo.model.Range
 import tech.harmonysoft.oss.leonardo.model.data.ChartDataSource
 import tech.harmonysoft.oss.leonardo.model.util.RangesList
-import java.util.*
 
 /**
  * All methods are assumed to be called from UI thread.
@@ -29,17 +28,15 @@ interface ChartModel {
 
     fun arePointsForActiveRangeLoaded(dataSource: ChartDataSource, anchor: Any): Boolean
 
-    fun getAllPoints(dataSource: ChartDataSource): NavigableSet<DataPoint>
-    fun getPoints(dataSource: ChartDataSource, start: Long, end: Long): NavigableSet<DataPoint>
+    fun getThisOrPrevious(dataSource: ChartDataSource, x: Long): DataPoint?
+    fun getThisOrNext(dataSource: ChartDataSource, x: Long): DataPoint?
 
-    /**
-     * @param dataSource    target data source
-     * @param anchor        target anchor
-     * @return              sorted collection of given source's data points
-     */
-    fun getCurrentRangePoints(dataSource: ChartDataSource, anchor: Any): NavigableSet<DataPoint>
-    fun getPreviousPointForActiveRange(dataSource: ChartDataSource, anchor: Any): DataPoint?
-    fun getNextPointForActiveRange(dataSource: ChartDataSource, anchor: Any): DataPoint?
+    fun forRangePoints(dataSource: ChartDataSource,
+                       start: Long,
+                       end: Long,
+                       includePrevious: Boolean = false,
+                       includeNext: Boolean = false,
+                       action: (DataPoint) -> Boolean)
 
     fun getLoadedRanges(dataSource: ChartDataSource): RangesList
 
