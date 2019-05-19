@@ -26,11 +26,10 @@ interface ChartModel {
     fun enableDataSource(dataSource: ChartDataSource)
     fun removeDataSource(dataSource: ChartDataSource)
 
-    fun arePointsForActiveRangeLoaded(dataSource: ChartDataSource, anchor: Any): Boolean
-
     fun getThisOrPrevious(dataSource: ChartDataSource, x: Long): DataPoint?
     fun getThisOrNext(dataSource: ChartDataSource, x: Long): DataPoint?
 
+    fun isLoadingInProgress(dataSource: ChartDataSource): Boolean
     fun forRangePoints(dataSource: ChartDataSource,
                        start: Long,
                        end: Long,
@@ -39,8 +38,10 @@ interface ChartModel {
                        action: (DataPoint) -> Boolean)
 
     fun getLoadedRanges(dataSource: ChartDataSource): RangesList
+    fun onPointsLoaded(dataSource: ChartDataSource, range: Range, points: Iterable<DataPoint>)
 
-    fun onPointsLoaded(dataSource: ChartDataSource, range: Range, points: Collection<DataPoint>)
+    fun getMin(dataSource: ChartDataSource): Long?
+    fun getMax(dataSource: ChartDataSource): Long?
 
     fun addListener(listener: ChartModelListener)
     fun removeListener(listener: ChartModelListener)

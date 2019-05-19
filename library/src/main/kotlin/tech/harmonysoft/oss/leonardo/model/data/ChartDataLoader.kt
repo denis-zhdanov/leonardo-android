@@ -1,16 +1,13 @@
 package tech.harmonysoft.oss.leonardo.model.data
 
-import tech.harmonysoft.oss.leonardo.model.DataPoint
-import tech.harmonysoft.oss.leonardo.model.Range
-
 interface ChartDataLoader {
 
     /**
      * Loads target data. Is assumed to be called from a non-main thread.
      *
-     * @param range     target X range
-     * @return          an interval for the target X range if it's within the current dataset's range;
-     *                  `null` otherwise
+     * @param from      target X start (inclusive)
+     * @param to        target X end (inclusive)
+     * @param handle    load handle to use
      */
-    fun load(range: Range): Collection<DataPoint>?
+    fun load(from: Long, to: Long, handle: LoadHandle)
 }

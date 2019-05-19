@@ -2,13 +2,11 @@ package tech.harmonysoft.oss.leonardo.model.runtime.impl
 
 import android.annotation.SuppressLint
 import android.os.AsyncTask
-import tech.harmonysoft.oss.leonardo.model.DataPoint
 import tech.harmonysoft.oss.leonardo.model.Range
 import tech.harmonysoft.oss.leonardo.model.data.ChartDataSource
-import tech.harmonysoft.oss.leonardo.model.runtime.ChartModel
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModelListener
 
-class ChartDataAutoLoader(private val model: ChartModel) : ChartModelListener {
+class ChartDataAutoLoader(private val model: ChartModelImpl) : ChartModelListener {
 
     private val tasks = mutableSetOf<ChartDataLoadTask>()
 
@@ -52,42 +50,79 @@ class ChartDataAutoLoader(private val model: ChartModel) : ChartModelListener {
 
         lastKnownBufferRange = bufferRange
 
-        for (task in tasks) {
-            task.cancel(true)
-        }
-        tasks.clear()
-
         for (dataSource in model.registeredDataSources) {
             val loadedRanges = model.getLoadedRanges(dataSource)
             val rangesToLoad = loadedRanges.getMissing(bufferRange)
+            val min = model.getMin(dataSource)
+            val max = model.getMax(dataSource)
 
             for (rangeToLoad in rangesToLoad) {
-                val task = ChartDataLoadTask()
+                if ((min != null && rangeToLoad.end < min) || (max != null && max < rangeToLoad.start)) {
+                    continue
+                }
+
+                val startToUse = if (min == null || rangeToLoad.start >= min) {
+                    rangeToLoad.start
+                } else {
+                    min
+                }
+
+                val endToUse = if (max == null || rangeToLoad.end <= max) {
+                    rangeToLoad.end
+                } else {
+                    max
+                }
+
+                val rangeToUse = if (startToUse == rangeToLoad.start && endToUse == rangeToLoad.end) {
+                    rangeToLoad
+                } else {
+                    Range(startToUse, endToUse)
+                }
+
+                val task = ChartDataLoadTask(dataSource, rangeToUse)
                 tasks += task
-                task.execute(LoadRequest(dataSource, rangeToLoad))
+                task.execute(null)
             }
+        }
+    }
+
+    fun isLoadingInProgress(dataSource: ChartDataSource, start: Long, end: Long): Boolean {
+        return tasks.any { task ->
+            task.dataSource == dataSource && (task.range.contains(start) || task.range.contains(end))
         }
     }
 
     @SuppressLint("StaticFieldLeak")
-    private inner class ChartDataLoadTask : AsyncTask<LoadRequest, Void, LoadResult>() {
+    private inner class ChartDataLoadTask(
+        val dataSource: ChartDataSource,
+        val range: Range
+    ) : AsyncTask<Void?, Void?, Void?>() {
 
-        override fun doInBackground(vararg requests: LoadRequest): LoadResult {
-            if (requests.size != 1) {
-                throw IllegalArgumentException("Expected to get a single load request but got ${requests.size}")
-            }
-            val request = requests[0]
-            val points = request.dataSource.loader.load(request.range)
-            return LoadResult(points ?: emptyList(), request.range, request.dataSource)
+        private val handle = LoadHandleImpl()
+
+        override fun doInBackground(vararg dummy: Void?): Void? {
+            dataSource.loader.load(range.start, range.end, handle)
+            return null
         }
 
-        override fun onPostExecute(loadResult: LoadResult) {
+        override fun onPostExecute(dummy: Void?) {
             tasks.remove(this)
-            model.onPointsLoaded(loadResult.source, loadResult.range, loadResult.points)
+
+            val min = handle.minimum.get()
+            if (min != null) {
+                model.setMin(dataSource, min)
+            }
+
+            val max = handle.maximum.get()
+            if (max != null) {
+                model.setMax(dataSource, max)
+            }
+
+            val points = handle.points
+            if (points.isNotEmpty()) {
+                model.onPointsLoaded(dataSource, range, points)
+            }
         }
     }
 
-    private data class LoadRequest(val dataSource: ChartDataSource, val range: Range)
-
-    private data class LoadResult(val points: Collection<DataPoint>, val range: Range, val source: ChartDataSource)
 }

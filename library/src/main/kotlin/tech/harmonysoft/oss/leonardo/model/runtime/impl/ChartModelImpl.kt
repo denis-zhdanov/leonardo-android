@@ -27,6 +27,8 @@ class ChartModelImpl(private val bufferPagesCount: Int = 3) : ChartModel {
     private val loadedRanges = mutableMapOf<ChartDataSource, RangesList>()
     private val activeRanges = mutableMapOf<Any, Range>()
     private val disabledDataSources = mutableSetOf<ChartDataSource>()
+    private val minimums = mutableMapOf<ChartDataSource, Long>()
+    private val maximums = mutableMapOf<ChartDataSource, Long>()
 
     private var compoundActiveRange = Range.EMPTY_RANGE
     private var _bufferRange = Range.EMPTY_RANGE
@@ -122,6 +124,8 @@ class ChartModelImpl(private val bufferPagesCount: Int = 3) : ChartModel {
         }
         points[dataSource] = DataTreeImpl(LONG_COMPARATOR)
         loadedRanges[dataSource] = RangesList()
+        minimums.remove(dataSource)
+        maximums.remove(dataSource)
         notifyListeners {
             it.onDataSourceAdded(dataSource)
         }
@@ -164,15 +168,6 @@ class ChartModelImpl(private val bufferPagesCount: Int = 3) : ChartModel {
         }
     }
 
-    override fun arePointsForActiveRangeLoaded(dataSource: ChartDataSource, anchor: Any): Boolean {
-        val range = getActiveRange(anchor)
-        if (range.empty) {
-            return true
-        }
-        val rangesList = loadedRanges[dataSource]
-        return rangesList != null && rangesList.contains(range)
-    }
-
     override fun getThisOrPrevious(dataSource: ChartDataSource, x: Long): DataPoint? {
         val dataSourcePoints = points[dataSource] ?: return null
         return dataSourcePoints.get(x) ?: dataSourcePoints.getPreviousValue(x)
@@ -181,6 +176,15 @@ class ChartModelImpl(private val bufferPagesCount: Int = 3) : ChartModel {
     override fun getThisOrNext(dataSource: ChartDataSource, x: Long): DataPoint? {
         val dataSourcePoints = points[dataSource] ?: return null
         return dataSourcePoints.get(x) ?: dataSourcePoints.getNextValue(x)
+    }
+
+    override fun isLoadingInProgress(dataSource: ChartDataSource): Boolean {
+        for (range in activeRanges.values) {
+            if (autoLoader.isLoadingInProgress(dataSource, range.start, range.end)) {
+                return true
+            }
+        }
+        return false
     }
 
     override fun forRangePoints(dataSource: ChartDataSource,
@@ -203,33 +207,27 @@ class ChartModelImpl(private val bufferPagesCount: Int = 3) : ChartModel {
                ?: throw IllegalArgumentException("No range info is found for data source $dataSource")
     }
 
-    override fun onPointsLoaded(dataSource: ChartDataSource, range: Range, points: Collection<DataPoint>) {
-        val dataSourcePoints = this.points[dataSource]
-        val rangesList = loadedRanges[dataSource]
-        if (dataSourcePoints == null || rangesList == null) {
-            return
-        }
-
-        val anchorWithChangedActiveRange = mutableSetOf<Any>()
+    override fun onPointsLoaded(dataSource: ChartDataSource, range: Range, points: Iterable<DataPoint>) {
+        val dataSourcePoints = this.points[dataSource] ?: return
+        val loadedRanges = loadedRanges[dataSource] ?: return
+        loadedRanges.add(range)
+        val anchorsWithChangedActiveRange = mutableSetOf<Any>()
         for (point in points) {
-            if (!bufferRange.contains(point.x)) {
-                continue
-            }
-
-            dataSourcePoints.put(point.x, point)
-            for ((key, value) in activeRanges) {
-                if (value.contains(point.x)) {
-                    anchorWithChangedActiveRange.add(key)
+            if (_bufferRange.contains(point.x)) {
+                dataSourcePoints.put(point.x, point)
+                for ((anchor, activeRange) in activeRanges) {
+                    if (activeRange.contains(point.x)) {
+                        anchorsWithChangedActiveRange.add(anchor)
+                    }
                 }
             }
         }
 
-        rangesList.add(range)
-        rangesList.keepOnly(bufferRange)
-
-        for (anchor in anchorWithChangedActiveRange) {
-            notifyListeners {
-                it.onActiveDataPointsLoaded(anchor)
+        if (anchorsWithChangedActiveRange.isNotEmpty()) {
+            for (anchor in anchorsWithChangedActiveRange) {
+                notifyListeners {
+                    it.onActiveDataPointsLoaded(anchor)
+                }
             }
         }
     }
@@ -255,6 +253,22 @@ class ChartModelImpl(private val bufferPagesCount: Int = 3) : ChartModel {
                 }
             }
         }
+    }
+
+    override fun getMin(dataSource: ChartDataSource): Long? {
+        return minimums[dataSource]
+    }
+
+    fun setMin(dataSource: ChartDataSource, min: Long) {
+        minimums[dataSource] = min
+    }
+
+    override fun getMax(dataSource: ChartDataSource): Long? {
+        return maximums[dataSource]
+    }
+
+    fun setMax(dataSource: ChartDataSource, max: Long) {
+        maximums[dataSource] = max
     }
 
     private data class ListenerRecord(val listener: ChartModelListener, var notificationInProgress: Boolean = false)
