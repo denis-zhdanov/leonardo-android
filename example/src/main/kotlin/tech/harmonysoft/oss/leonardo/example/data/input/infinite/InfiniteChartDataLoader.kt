@@ -5,12 +5,23 @@ import tech.harmonysoft.oss.leonardo.model.data.ChartDataLoader
 import tech.harmonysoft.oss.leonardo.model.data.LoadHandle
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
-class InfiniteChartDataLoader : ChartDataLoader {
+class InfiniteChartDataLoader(private val delayMs: Long? = null) : ChartDataLoader {
 
     private val cache = ConcurrentHashMap<Long, DataPoint>()
 
     override fun load(from: Long, to: Long, handle: LoadHandle) {
+        val action = { doLoad(from, to, handle) }
+        if (delayMs == null) {
+            action()
+        } else {
+            executor.schedule(action, delayMs, TimeUnit.MILLISECONDS)
+        }
+    }
+
+    private fun doLoad(from: Long, to: Long, handle: LoadHandle) {
         var prevY: Long? = null
         val random = Random()
         for (x in (from..to)) {
@@ -29,11 +40,14 @@ class InfiniteChartDataLoader : ChartDataLoader {
                 handle.onPointLoaded(cached.x, cached.y)
             }
         }
+        handle.onLoadingEnd()
     }
 
     companion object {
         private const val Y_MIN = 0
         private const val Y_MAX = 120
         private const val Y_RANGE_LENGTH = Y_MAX - Y_MIN + 1
+
+        private val executor = Executors.newScheduledThreadPool(1)
     }
 }

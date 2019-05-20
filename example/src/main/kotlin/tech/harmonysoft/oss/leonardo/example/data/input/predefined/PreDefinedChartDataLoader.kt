@@ -28,5 +28,6 @@ class PreDefinedChartDataLoader(points: Collection<DataPoint>) : ChartDataLoader
         if (last != null && last.x <= to) {
             handle.onMaximumValue(last.x)
         }
+        handle.onLoadingEnd()
     }
 }

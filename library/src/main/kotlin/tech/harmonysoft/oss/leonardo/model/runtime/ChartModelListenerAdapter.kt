@@ -21,6 +21,9 @@ abstract class ChartModelListenerAdapter : ChartModelListener {
     override fun onActiveDataPointsLoaded(anchor: Any) {
     }
 
+    override fun onPointsLoadingIterationEnd(dataSource: ChartDataSource) {
+    }
+
     override fun onSelectionChange() {
     }
 }

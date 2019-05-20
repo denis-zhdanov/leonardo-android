@@ -41,7 +41,7 @@ class DynamicChartFragment : Fragment() {
         return listOf(
                 ChartDataSource("first",
                                 ResourcesCompat.getColor(resources, R.color.plot1, null),
-                                InfiniteChartDataLoader()),
+                                InfiniteChartDataLoader(2000)),
                 ChartDataSource("second",
                                 ResourcesCompat.getColor(resources, R.color.plot2, null),
                                 InfiniteChartDataLoader())

@@ -112,6 +112,9 @@ class NavigatorChartView @JvmOverloads constructor(
                 invalidate()
             }
 
+            override fun onPointsLoadingIterationEnd(dataSource: ChartDataSource) {
+            }
+
             override fun onSelectionChange() {}
         })
     }

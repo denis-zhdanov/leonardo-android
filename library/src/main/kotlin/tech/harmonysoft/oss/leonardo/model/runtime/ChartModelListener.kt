@@ -16,5 +16,7 @@ interface ChartModelListener {
 
     fun onActiveDataPointsLoaded(anchor: Any)
 
+    fun onPointsLoadingIterationEnd(dataSource: ChartDataSource)
+
     fun onSelectionChange()
 }

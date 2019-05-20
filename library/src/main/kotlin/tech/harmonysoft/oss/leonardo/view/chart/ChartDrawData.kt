@@ -88,6 +88,9 @@ internal class ChartDrawData(
                 }
             }
 
+            override fun onPointsLoadingIterationEnd(dataSource: ChartDataSource) {
+            }
+
             override fun onSelectionChange() {
             }
         })

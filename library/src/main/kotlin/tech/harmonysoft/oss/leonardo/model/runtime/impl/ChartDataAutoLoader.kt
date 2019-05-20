@@ -1,12 +1,16 @@
 package tech.harmonysoft.oss.leonardo.model.runtime.impl
 
 import android.annotation.SuppressLint
-import android.os.AsyncTask
+import android.os.Handler
+import android.os.Looper
 import tech.harmonysoft.oss.leonardo.model.Range
 import tech.harmonysoft.oss.leonardo.model.data.ChartDataSource
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModelListener
+import java.util.concurrent.Executor
 
-class ChartDataAutoLoader(private val model: ChartModelImpl) : ChartModelListener {
+class ChartDataAutoLoader(private val threadPool: Executor, private val model: ChartModelImpl) : ChartModelListener {
+
+    private val uiHandler = Handler(Looper.getMainLooper())
 
     private val tasks = mutableSetOf<ChartDataLoadTask>()
 
@@ -34,6 +38,9 @@ class ChartDataAutoLoader(private val model: ChartModelImpl) : ChartModelListene
     }
 
     override fun onActiveDataPointsLoaded(anchor: Any) {
+    }
+
+    override fun onPointsLoadingIterationEnd(dataSource: ChartDataSource) {
     }
 
     override fun onSelectionChange() {
@@ -81,7 +88,7 @@ class ChartDataAutoLoader(private val model: ChartModelImpl) : ChartModelListene
 
                 val task = ChartDataLoadTask(dataSource, rangeToUse)
                 tasks += task
-                task.execute(null)
+                threadPool.execute(task)
             }
         }
     }
@@ -96,16 +103,17 @@ class ChartDataAutoLoader(private val model: ChartModelImpl) : ChartModelListene
     private inner class ChartDataLoadTask(
         val dataSource: ChartDataSource,
         val range: Range
-    ) : AsyncTask<Void?, Void?, Void?>() {
+    ) : Runnable {
 
-        private val handle = LoadHandleImpl()
-
-        override fun doInBackground(vararg dummy: Void?): Void? {
-            dataSource.loader.load(range.start, range.end, handle)
-            return null
+        private val handle = LoadHandleImpl {
+            uiHandler.post(this::onPostExecute)
         }
 
-        override fun onPostExecute(dummy: Void?) {
+        override fun run() {
+            dataSource.loader.load(range.start, range.end, handle)
+        }
+
+        fun onPostExecute() {
             tasks.remove(this)
 
             val min = handle.minimum.get()
@@ -122,6 +130,7 @@ class ChartDataAutoLoader(private val model: ChartModelImpl) : ChartModelListene
             if (points.isNotEmpty()) {
                 model.onPointsLoaded(dataSource, range, points)
             }
+            model.onPointsLoadingIterationEnd(dataSource)
         }
     }
 

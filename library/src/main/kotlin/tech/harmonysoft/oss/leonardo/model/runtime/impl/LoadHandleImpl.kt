@@ -5,7 +5,7 @@ import tech.harmonysoft.oss.leonardo.model.data.LoadHandle
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
-class LoadHandleImpl : LoadHandle {
+class LoadHandleImpl(private val loadingEndCallback: () -> Unit) : LoadHandle {
 
     private val pointsRef = AtomicReference<MutableCollection<DataPoint>>(mutableListOf())
 
@@ -35,5 +35,9 @@ class LoadHandleImpl : LoadHandle {
 
     override fun onPointsLoaded(points: Iterable<DataPoint>) {
         pointsRef.get().addAll(points)
+    }
+
+    override fun onLoadingEnd() {
+        loadingEndCallback()
     }
 }

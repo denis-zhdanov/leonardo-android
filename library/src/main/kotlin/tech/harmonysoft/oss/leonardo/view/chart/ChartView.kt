@@ -98,6 +98,9 @@ class ChartView @JvmOverloads constructor(
             }
         }
 
+        override fun onPointsLoadingIterationEnd(dataSource: ChartDataSource) {
+        }
+
         override fun onSelectionChange() {
             invalidate()
         }

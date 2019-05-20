@@ -10,6 +10,7 @@ import tech.harmonysoft.oss.leonardo.model.runtime.ChartModelListener
 import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil
 import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil.LONG_COMPARATOR
 import tech.harmonysoft.oss.leonardo.model.util.RangesList
+import java.util.concurrent.Executor
 import kotlin.math.max
 import kotlin.math.min
 
@@ -17,11 +18,12 @@ import kotlin.math.min
  * @param bufferPagesCount  number of chart data pages to keep in memory. E.g. if `1` is returned,
  *                          then the chart would keep one page before the current interval and one page
  *                          after the current interval
+ * @param workersPool       thread pool to use for data loading
  */
-class ChartModelImpl(private val bufferPagesCount: Int = 3) : ChartModel {
+class ChartModelImpl(private val bufferPagesCount: Int = 3, workersPool: Executor) : ChartModel {
 
     private val listeners = mutableListOf<ListenerRecord>()
-    private val autoLoader = ChartDataAutoLoader(this)
+    private val autoLoader = ChartDataAutoLoader(workersPool, this)
 
     private val points = mutableMapOf<ChartDataSource, DataTree<Long, DataPoint>>()
     private val loadedRanges = mutableMapOf<ChartDataSource, RangesList>()
@@ -229,6 +231,12 @@ class ChartModelImpl(private val bufferPagesCount: Int = 3) : ChartModel {
                     it.onActiveDataPointsLoaded(anchor)
                 }
             }
+        }
+    }
+
+    fun onPointsLoadingIterationEnd(dataSource: ChartDataSource) {
+        notifyListeners {
+            it.onPointsLoadingIterationEnd(dataSource)
         }
     }
 

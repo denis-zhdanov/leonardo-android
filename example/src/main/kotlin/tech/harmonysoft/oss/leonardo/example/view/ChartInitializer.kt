@@ -25,6 +25,7 @@ import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil
 import tech.harmonysoft.oss.leonardo.view.chart.ChartView
 import tech.harmonysoft.oss.leonardo.view.navigator.NavigatorChartView
 import tech.harmonysoft.oss.leonardo.view.navigator.ScrollListener
+import java.util.concurrent.Executors
 
 class ChartInitializer(
     private val scrollManager: ScrollManager,
@@ -44,6 +45,7 @@ class ChartInitializer(
         this.context = context
         val row = layoutInflater.inflate(R.layout.layout_chart_row, holder, false)
 
+        val progress = row.findViewById<View>(R.id.row_loading_progress)
         val chart = row.findViewById<ChartView>(R.id.row_chart)
         val navigator = row.findViewById<NavigatorChartView>(R.id.row_navigator)
         chartViews += Triple(chart, navigator, chartData.xLabelStrategy)
@@ -61,7 +63,7 @@ class ChartInitializer(
         navigator.apply(LeonardoUtil.asNavigatorShowCase(chart))
         applyUiSettings(chart, navigator, settingsManager.chartStyle, chartData.xLabelStrategy, holder.context)
 
-        val model = ChartModelImpl()
+        val model = ChartModelImpl(workersPool = THREAD_POOL)
         chartData.dataSources.forEach {
             model.addDataSource(it)
         }
@@ -69,12 +71,39 @@ class ChartInitializer(
         navigator.apply(model)
         model.setActiveRange(chartData.xRange, navigator.dataAnchor)
 
+        setUpProgressUi(model, progress)
+
         addSelectors(row.findViewById(R.id.row_settings), model)
         setupPersistentSettings(settingsManager.getChartSettings(chartData.name), model, chart, navigator)
 
         row.findViewById<TextView>(R.id.row_title).text = chartData.name
 
         holder.addView(row)
+    }
+
+    private fun setUpProgressUi(model: ChartModel, progress: View) {
+        model.addListener(object : ChartModelListenerAdapter() {
+
+            override fun onRangeChanged(anchor: Any) {
+                progress.postDelayed({
+                                for (source in model.registeredDataSources) {
+                                    if (model.isLoadingInProgress(source)) {
+                                        progress.visibility = View.VISIBLE
+                                        break
+                                    }
+                                }
+                            }, 500)
+            }
+
+            override fun onPointsLoadingIterationEnd(dataSource: ChartDataSource) {
+                for (source in model.registeredDataSources) {
+                    if (model.isLoadingInProgress(source)) {
+                        return
+                    }
+                }
+                progress.visibility = View.GONE
+            }
+        })
     }
 
     private fun addSelectors(contentHolder: ViewGroup, model: ChartModel) {
@@ -181,5 +210,9 @@ class ChartInitializer(
         for ((chart, navigator, xLabelStrategy) in chartViews) {
             applyUiSettings(chart, navigator, event.currentStyle, xLabelStrategy, context)
         }
+    }
+
+    companion object {
+        private val THREAD_POOL = Executors.newFixedThreadPool(2)
     }
 }

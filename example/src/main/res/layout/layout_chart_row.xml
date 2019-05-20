@@ -12,11 +12,24 @@
             android:textColor="@color/title"
             android:layout_marginTop="@dimen/app_padding"/>
 
-    <tech.harmonysoft.oss.leonardo.view.chart.ChartView
-            android:id="@+id/row_chart"
+    <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/app_padding"/>
+            android:layout_height="wrap_content">
+
+        <tech.harmonysoft.oss.leonardo.view.chart.ChartView
+                android:id="@+id/row_chart"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/app_padding"/>
+
+        <ProgressBar
+                android:id="@+id/row_loading_progress"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_gravity="top|end"
+                android:indeterminate="true"/>
+
+    </FrameLayout>
 
     <tech.harmonysoft.oss.leonardo.view.navigator.NavigatorChartView
             android:id="@+id/row_navigator"
