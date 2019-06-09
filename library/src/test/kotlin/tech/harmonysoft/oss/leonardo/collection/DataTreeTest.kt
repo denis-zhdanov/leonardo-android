@@ -238,4 +238,65 @@ class DataTreeTest {
         }
     }
 
+    @Test
+    fun `endless rebalance 2019-06-09`() {
+        (-700..700).forEach { tree.put(it, it.toString()) }
+        tree.removeLowerThen(-716)
+        tree.removeGreaterThen(712)
+        (-716..-701).forEach { tree.put(it, it.toString()) }
+        (701..712).forEach { tree.put(it, it.toString()) }
+        tree.removeLowerThen(-740)
+        tree.removeGreaterThen(730)
+        (-740..-717).forEach { tree.put(it, it.toString()) }
+        (713..730).forEach { tree.put(it, it.toString()) }
+        tree.removeLowerThen(-764)
+        tree.removeGreaterThen(748)
+        (731..748).forEach { tree.put(it, it.toString()) }
+        (-764..-741).forEach { tree.put(it, it.toString()) }
+        tree.removeLowerThen(-780)
+        tree.removeGreaterThen(760)
+        (749..760).forEach { tree.put(it, it.toString()) }
+        (-780..-765).forEach { tree.put(it, it.toString()) }
+        tree.removeLowerThen(-792)
+        tree.removeGreaterThen(769)
+        (-792..-781).forEach { tree.put(it, it.toString()) }
+        (761..769).forEach { tree.put(it, it.toString()) }
+        tree.removeLowerThen(-800)
+        tree.removeGreaterThen(775)
+        (-800..-793).forEach { tree.put(it, it.toString()) }
+        (770..775).forEach { tree.put(it, it.toString()) }
+        tree.removeLowerThen(-808)
+        tree.removeGreaterThen(781)
+        (776..781).forEach { tree.put(it, it.toString()) }
+        (-808..-801).forEach { tree.put(it, it.toString()) }
+        tree.removeLowerThen(-816)
+        tree.removeGreaterThen(787)
+        (782..787).forEach { tree.put(it, it.toString()) }
+        (-816..-809).forEach { tree.put(it, it.toString()) }
+        tree.removeLowerThen(-820)
+        tree.removeGreaterThen(790)
+        (788..790).forEach { tree.put(it, it.toString()) }
+        (-820..-817).forEach { tree.put(it, it.toString()) }
+        tree.removeLowerThen(-832)
+        tree.removeGreaterThen(799)
+        (791..799).forEach { tree.put(it, it.toString()) }
+        (-832..-821).forEach { tree.put(it, it.toString()) }
+        tree.removeLowerThen(-836)
+        tree.removeGreaterThen(802)
+        (-836..-833).forEach { tree.put(it, it.toString()) }
+        (800..802).forEach { tree.put(it, it.toString()) }
+        tree.removeLowerThen(-840)
+        tree.removeGreaterThen(805)
+        (-840..-837).forEach { tree.put(it, it.toString()) }
+        (803..805).forEach { tree.put(it, it.toString()) }
+        tree.removeLowerThen(-828)
+        tree.removeGreaterThen(796)
+        tree.removeLowerThen(-820)
+        tree.removeGreaterThen(790)
+        tree.removeLowerThen(-812)
+        tree.removeGreaterThen(784)
+        tree.removeLowerThen(-800)
+        tree.removeGreaterThen(775)
+        tree.removeLowerThen(-788)
+    }
 }

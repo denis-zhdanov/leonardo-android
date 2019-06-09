@@ -1,6 +1,7 @@
 package tech.harmonysoft.oss.leonardo.collection
 
 import java.util.*
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.max
 
 /**
@@ -16,6 +17,8 @@ import kotlin.math.max
  * It caches last call's results and tries re-using them on subsequent calls.
  */
 class DataTreeImpl<K, V>(private val comparator: Comparator<K>) : DataTree<K, V> {
+
+    private val id = COUNTER.incrementAndGet()
 
     private var root: Entry<K, V>? = null
     private var cached: Entry<K, V>? = null
@@ -192,6 +195,9 @@ class DataTreeImpl<K, V>(private val comparator: Comparator<K>) : DataTree<K, V>
     }
 
     override fun put(key: K, value: V) {
+        if (DEBUG) {
+            println("$id: DataTreeImpl.put($key, $value)")
+        }
         val newEntry = insert(key, value) ?: return
         updateHeights(newEntry)
         val parent = findUnbalancedParent(newEntry) ?: return
@@ -285,6 +291,9 @@ class DataTreeImpl<K, V>(private val comparator: Comparator<K>) : DataTree<K, V>
     }
 
     override fun removeLowerThen(key: K) {
+        if (DEBUG) {
+            println("$id: DataTreeImpl.removeLowerThen($key)")
+        }
         val limitPoint = getThisOrHigher(key)
 
         if (limitPoint == null) {
@@ -351,7 +360,11 @@ class DataTreeImpl<K, V>(private val comparator: Comparator<K>) : DataTree<K, V>
         e = limitPoint
         do {
             while (e != null && !e.balanced) {
-                rotateLeft(e)
+                if (e.left.height > e.right.height + 1) {
+                    rotateRight(e)
+                } else if (e.right.height > e.left.height + 1) {
+                    rotateLeft(e)
+                }
             }
             e = e?.parent
         } while (e != null)
@@ -400,6 +413,9 @@ class DataTreeImpl<K, V>(private val comparator: Comparator<K>) : DataTree<K, V>
     }
 
     override fun removeGreaterThen(key: K) {
+        if (DEBUG) {
+            println("$id: DataTreeImpl.removeGreaterThen($key)")
+        }
         val limitPoint = getThisOrLower(key)
 
         if (limitPoint == null) {
@@ -450,7 +466,11 @@ class DataTreeImpl<K, V>(private val comparator: Comparator<K>) : DataTree<K, V>
         e = limitPoint
         do {
             while (e != null && !e.balanced) {
-                rotateRight(e)
+                if (e.left.height > e.right.height + 1) {
+                    rotateRight(e)
+                } else if (e.right.height > e.left.height + 1) {
+                    rotateLeft(e)
+                }
             }
             e = e?.parent
         } while (e != null)
@@ -593,7 +613,11 @@ class DataTreeImpl<K, V>(private val comparator: Comparator<K>) : DataTree<K, V>
     }
 
     companion object {
+        private val DEBUG = java.lang.Boolean.getBoolean("debug.data.tree")
+
         private val VALIDATE = java.lang.Boolean.getBoolean("validate.data.tree")
+
+        private val COUNTER = AtomicInteger()
     }
 
     private val Entry<*, *>?.height: Int
