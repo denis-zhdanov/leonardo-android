@@ -135,11 +135,10 @@ class DataTreeTest {
         }
     }
 
-
     @Test
     fun `when lower keys are removed then tree works correctly`() {
         (1..100).forEach { i ->
-            (1..(i - 1)).forEach { j ->
+            (1 until i).forEach { j ->
                 doTestLowerKeysRemoval(j, i, 1)
                 doTestLowerKeysRemoval(j, i, 2)
             }
@@ -190,7 +189,7 @@ class DataTreeTest {
     @Test
     fun `when greater keys are removed then the tree works correctly`() {
         (1..100).forEach { i ->
-            (1..(i - 1)).forEach { j ->
+            (1 until i).forEach { j ->
                 doTestGreaterKeysRemoval(j, i, 1)
                 doTestGreaterKeysRemoval(j, i, 2)
             }
@@ -298,5 +297,280 @@ class DataTreeTest {
         tree.removeLowerThen(-800)
         tree.removeGreaterThen(775)
         tree.removeLowerThen(-788)
+    }
+
+    @Test
+    fun `when remove is called on root then processing is fine`() {
+        (1..3).forEach { tree.put(it, it.toString()) }
+        assertThat(tree.remove(2)).isEqualTo("2")
+        assertThat(tree.keys).containsOnly(1, 3)
+        (tree.keys).forEach { assertThat(tree.get(it)).isEqualTo(it.toString()) }
+        (-1..1).forEach {
+            checkPrevious(it, null)
+        }
+        (2..3).forEach {
+            checkPrevious(it, 1)
+        }
+        (3..5).forEach {
+            checkNext(it, null)
+        }
+        (1..2).forEach {
+            checkNext(it, 3)
+        }
+    }
+
+    @Test
+    fun `when remove is called on left child which doesn't have children then processing is fine`() {
+        (1..3).forEach { tree.put(it, it.toString()) }
+        assertThat(tree.remove(1)).isEqualTo("1")
+        assertThat(tree.keys).containsOnly(2, 3)
+        (tree.keys).forEach { assertThat(tree.get(it)).isEqualTo(it.toString()) }
+        (-1..2).forEach {
+            checkPrevious(it, null)
+        }
+        assertThat(tree.getPreviousKey(3)).isEqualTo(2)
+        assertThat(tree.getPreviousValue(3)).isEqualTo("2")
+        (4..6).forEach {
+            checkPrevious(it, 3)
+        }
+        (3..5).forEach {
+            checkNext(it, null)
+        }
+        (-1..1).forEach {
+            checkNext(it, 2)
+        }
+        checkNext(2, 3)
+    }
+
+    @Test
+    fun `when remove is called on left child which has only left child then processing is fine`() {
+        (4 downTo 1).forEach { tree.put(it, it.toString()) }
+        assertThat(tree.remove(2)).isEqualTo("2")
+        assertThat(tree.keys).containsOnly(1, 3, 4)
+        (tree.keys).forEach { assertThat(tree.get(it)).isEqualTo(it.toString()) }
+        (-1..1).forEach {
+            checkPrevious(it, null)
+        }
+        (2..3).forEach {
+            checkPrevious(it, 1)
+        }
+        checkPrevious(3, 1)
+        checkPrevious(4, 3)
+        (5..6).forEach {
+            checkPrevious(it, 4)
+        }
+        (4..5).forEach {
+            checkNext(it, null)
+        }
+        checkNext(3, 4)
+        (1..2).forEach {
+            checkNext(it, 3)
+        }
+        (-1..0).forEach {
+            checkNext(it, 1)
+        }
+    }
+
+    @Test
+    fun `when remove is called on left child which has only right child then processing is fine`() {
+        listOf(3, 1, 4, 2).forEach { tree.put(it, it.toString()) }
+        assertThat(tree.remove(1)).isEqualTo("1")
+        assertThat(tree.keys).containsOnly(2, 3, 4)
+        (tree.keys).forEach { assertThat(tree.get(it)).isEqualTo(it.toString()) }
+        (-1..2).forEach {
+            checkPrevious(it, null)
+        }
+        checkPrevious(3, 2)
+        checkPrevious(4, 3)
+        (5..7).forEach {
+            checkPrevious(it, 4)
+        }
+        (4..5).forEach {
+            checkNext(it, null)
+        }
+        checkNext(3, 4)
+        checkNext(2, 3)
+        (-1..1).forEach {
+            checkNext(it, 2)
+        }
+    }
+
+    @Test
+    fun `when remove is called on left child which has either left or right child then processing is fine`() {
+        listOf(4, 2, 5, 1, 3).forEach { tree.put(it, it.toString()) }
+        assertThat(tree.remove(2)).isEqualTo("2")
+        assertThat(tree.keys).containsOnly(1, 3, 4, 5)
+        (tree.keys).forEach { assertThat(tree.get(it)).isEqualTo(it.toString()) }
+        (-1..1).forEach {
+            checkPrevious(it, null)
+        }
+        (2..3).forEach {
+            checkPrevious(it, 1)
+        }
+        checkPrevious(4, 3)
+        checkPrevious(5, 4)
+        (6..7).forEach {
+            checkPrevious(it, 5)
+        }
+        (5..7).forEach {
+            checkNext(it, null)
+        }
+        checkNext(4, 5)
+        checkNext(3, 4)
+        (1..2).forEach {
+            checkNext(it, 3)
+        }
+        (-2..0).forEach {
+            checkNext(it, 1)
+        }
+    }
+
+    @Test
+    fun `when remove is called on right child which doesn't have children then processing is fine`() {
+        (1..3).forEach { tree.put(it, it.toString()) }
+        assertThat(tree.remove(3)).isEqualTo("3")
+        assertThat(tree.keys).containsOnly(1, 2)
+        (tree.keys).forEach { assertThat(tree.get(it)).isEqualTo(it.toString()) }
+        (-1..1).forEach {
+            checkPrevious(it, null)
+        }
+        checkPrevious(2, 1)
+        (3..6).forEach {
+            checkPrevious(it, 2)
+        }
+        (2..5).forEach {
+            checkNext(it, null)
+        }
+        (-2..0).forEach {
+            checkNext(it, 1)
+        }
+        checkNext(1, 2)
+    }
+
+    @Test
+    fun `when remove is called on right child which has only left child then processing is fine`() {
+        listOf(2, 1, 4, 3).forEach { tree.put(it, it.toString()) }
+        assertThat(tree.remove(4)).isEqualTo("4")
+        assertThat(tree.keys).containsOnly(1, 2, 3)
+        (tree.keys).forEach { assertThat(tree.get(it)).isEqualTo(it.toString()) }
+        (-1..1).forEach {
+            checkPrevious(it, null)
+        }
+        checkPrevious(2, 1)
+        checkPrevious(3, 2)
+        (4..7).forEach {
+            checkPrevious(it, 3)
+        }
+        (3..7).forEach {
+            checkNext(it, null)
+        }
+        checkNext(2, 3)
+        checkNext(1, 2)
+        (-2..0).forEach {
+            checkNext(it, 1)
+        }
+    }
+
+    @Test
+    fun `when remove is called on right child which has only right child then processing is fine`() {
+        listOf(2, 1, 3, 4).forEach { tree.put(it, it.toString()) }
+        assertThat(tree.remove(3)).isEqualTo("3")
+        assertThat(tree.keys).containsOnly(1, 2, 4)
+        (tree.keys).forEach { assertThat(tree.get(it)).isEqualTo(it.toString()) }
+        (-1..1).forEach {
+            checkPrevious(it, null)
+        }
+        checkPrevious(2, 1)
+        (3..4).forEach {
+            checkPrevious(it, 2)
+        }
+        (5..7).forEach {
+            checkPrevious(it, 4)
+        }
+        (4..7).forEach {
+            checkNext(it, null)
+        }
+        (2..3).forEach {
+            checkNext(it, 4)
+        }
+        checkNext(1, 2)
+        (-2..0).forEach {
+            checkNext(it, 1)
+        }
+    }
+
+    @Test
+    fun `when remove is called on right child which has either left or right child then processing is fine`() {
+        listOf(2, 1, 4, 3, 5).forEach { tree.put(it, it.toString()) }
+        assertThat(tree.remove(4)).isEqualTo("4")
+        assertThat(tree.keys).containsOnly(1, 2, 3, 5)
+        (tree.keys).forEach { assertThat(tree.get(it)).isEqualTo(it.toString()) }
+        (-1..1).forEach {
+            checkPrevious(it, null)
+        }
+        checkPrevious(2, 1)
+        checkPrevious(3, 2)
+        (4..5).forEach {
+            checkPrevious(it, 3)
+        }
+        (6..7).forEach {
+            checkPrevious(it, 5)
+        }
+        (5..7).forEach {
+            checkNext(it, null)
+        }
+        (3..4).forEach {
+            checkNext(it, 5)
+        }
+        checkNext(2, 3)
+        checkNext(1, 2)
+        (-2..0).forEach {
+            checkNext(it, 1)
+        }
+    }
+
+    @Test
+    fun `endless rebalance 2019-06-22`() {
+        testSteps("endless-rebalance-2019-06-22.txt")
+    }
+
+    private fun testSteps(fileName: String) {
+        val input = ClassLoader.getSystemClassLoader().getResourceAsStream(fileName)
+        input.reader().forEachLine { line ->
+            INSTRUCTION_PUT.matchEntire(line)?.apply {
+                val value = groupValues[1]
+                tree.put(value.toInt(), value)
+            } ?: INSTRUCTION_REMOVE_GREATER.matchEntire(line)?.apply {
+                tree.removeGreaterThen(groupValues[1].toInt())
+            } ?: INSTRUCTION_REMOVE_LOWER.matchEntire(line)?.apply {
+                tree.removeLowerThen(groupValues[1].toInt())
+            } ?: throw AssertionError("Unmatched instruction '$line'")
+        }
+    }
+
+    private fun checkPrevious(key: Int, expected: Int?) {
+        if (expected == null) {
+            assertThat(tree.getPreviousKey(key)).isNull()
+            assertThat(tree.getPreviousValue(key)).isNull()
+        } else {
+            assertThat(tree.getPreviousKey(key)).isEqualTo(expected)
+            assertThat(tree.getPreviousValue(key)).isEqualTo(expected.toString())
+        }
+    }
+
+    private fun checkNext(key: Int, expected: Int?) {
+        if (expected == null) {
+            assertThat(tree.getNextKey(key)).isNull()
+            assertThat(tree.getNextValue(key)).isNull()
+        } else {
+            assertThat(tree.getNextKey(key)).isEqualTo(expected)
+            assertThat(tree.getNextValue(key)).isEqualTo(expected.toString())
+        }
+    }
+
+    companion object {
+        private val INSTRUCTION_PUT = """put\(([^,]+).*\)""".toRegex()
+        private val INSTRUCTION_REMOVE_LOWER = """removeLowerThen\((.+)\)""".toRegex()
+        private val INSTRUCTION_REMOVE_GREATER = """removeGreaterThen\((.+)\)""".toRegex()
     }
 }

@@ -1,5 +1,6 @@
 package tech.harmonysoft.oss.leonardo.collection
 
+import java.lang.StringBuilder
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.max
@@ -22,6 +23,10 @@ class DataTreeImpl<K, V>(private val comparator: Comparator<K>) : DataTree<K, V>
 
     private var root: Entry<K, V>? = null
     private var cached: Entry<K, V>? = null
+
+    var log: (String) -> Unit = {
+        println(it)
+    }
 
     override val empty: Boolean
         get() = root == null
@@ -196,36 +201,12 @@ class DataTreeImpl<K, V>(private val comparator: Comparator<K>) : DataTree<K, V>
 
     override fun put(key: K, value: V) {
         if (DEBUG) {
-            println("$id: DataTreeImpl.put($key, $value)")
+            log("$id: DataTreeImpl.put($key, $value)")
         }
+        cached = null
         val newEntry = insert(key, value) ?: return
         updateHeights(newEntry)
-        val parent = findUnbalancedParent(newEntry) ?: return
-        if (parent.left.height > parent.right.height) {
-            val left = parent.left
-            if (left != null) {
-                if (comparator.compare(key, left.key) < 0) {
-                    rotateRight(parent)
-                } else {
-                    rotateLeft(left)
-                    rotateRight(parent)
-                }
-            }
-        } else {
-            val right = parent.right
-            if (right != null) {
-                if (comparator.compare(key, right.key) > 0) {
-                    rotateLeft(parent)
-                } else {
-                    rotateRight(right)
-                    rotateLeft(parent)
-                }
-            }
-        }
-
-        if (VALIDATE) {
-            validateState()
-        }
+        balance(newEntry)
     }
 
     private fun insert(key: K, value: V): Entry<K, V>? {
@@ -277,14 +258,37 @@ class DataTreeImpl<K, V>(private val comparator: Comparator<K>) : DataTree<K, V>
         }
     }
 
-    private fun findUnbalancedParent(child: Entry<K, V>): Entry<K, V>? {
-        var parent = child.parent
-        while (parent != null) {
-            val diff = parent.left.height - parent.right.height
+    private fun balance(entry: Entry<K, V>) {
+        while (true) {
+            val unbalanced = findUnbalanced(entry) ?: break
+            val left = unbalanced.left
+            val right = unbalanced.right
+            if (left != null && left.height > right.height) {
+                if (left.left.height < left.right.height ) {
+                    rotateLeft(left)
+                }
+                rotateRight(unbalanced)
+            } else if (right != null && right.height > left.height) {
+                if (right.left.height > right.right.height) {
+                    rotateRight(right)
+                }
+                rotateLeft(unbalanced)
+            }
+        }
+
+        if (VALIDATE) {
+            validateState()
+        }
+    }
+
+    private fun findUnbalanced(child: Entry<K, V>): Entry<K, V>? {
+        var entry: Entry<K, V>? = child
+        while (entry != null) {
+            val diff = entry.left.height - entry.right.height
             if (diff < -1 || diff > 1) {
-                return parent
+                return entry
             } else {
-                parent = parent.parent
+                entry = entry.parent
             }
         }
         return null
@@ -292,85 +296,29 @@ class DataTreeImpl<K, V>(private val comparator: Comparator<K>) : DataTree<K, V>
 
     override fun removeLowerThen(key: K) {
         if (DEBUG) {
-            println("$id: DataTreeImpl.removeLowerThen($key)")
+            log("$id: DataTreeImpl.removeLowerThen($key)")
         }
-        val limitPoint = getThisOrHigher(key)
-
-        if (limitPoint == null) {
-            val r = root
-            if (r != null && comparator.compare(r.key, key) < 0) {
-                r.right?.parent = null
-                root = r.right
-                applyHeightDiff(-1, root)
-            } else {
-                root = null
-            }
-            cached = null
-            return
-        }
-
-        limitPoint.left = null
-        refreshHeightUp(limitPoint)
-
-        // There is a possible case that we have a tree like below:
-        //     2
-        //    / \
-        //   1  4
-        //     / \
-        //    3   5
-        // And we are asked to remove everything lower than 3. In this situation we need to go up from
-        // 'boundary node' 3 and replace a parent while current node is its right child. E.g. here we replace 2 by 4
-        //
-        // It's important to do that only for left parents. Consider that following situation:
-        //     4
-        //    / \
-        //   2   5
-        //  / \  \
-        // 1   3  6
-        // Suppose we're asked to remove everything lower then 3. Then we need to replace 2 by 3 first and
-        // stop because 3 is a left child.
-
-        var e: Entry<K, V>? = limitPoint
-        while (e != null) {
-            if (e.leftChild) {
-                e = e.parent
-                continue
-            } else if (e.rightChild) {
-                val parent = e.parent
-                val grandFather = parent?.parent
-
-                if (grandFather == null) {
-                    root = e
-                    e.parent = null
-                    break
-                } else {
-                    if (parent.rightChild) {
-                        grandFather.right = e
-                    } else {
-                        grandFather.left = e
-                    }
-                    e.parent = grandFather
-                    refreshHeightUp(e.parent)
-                }
-            } else {
-                break
-            }
-        }
-
-        e = limitPoint
-        do {
-            while (e != null && !e.balanced) {
-                if (e.left.height > e.right.height + 1) {
-                    rotateRight(e)
-                } else if (e.right.height > e.left.height + 1) {
-                    rotateLeft(e)
-                }
-            }
-            e = e?.parent
-        } while (e != null)
-
-
         cached = null
+        var shouldContinue = true
+        while (shouldContinue) {
+            var entry = root
+            shouldContinue = false
+            while (entry != null) {
+                val cmp = comparator.compare(key, entry.key)
+                if (cmp <= 0) {
+                    entry = entry.left
+                } else {
+                    doRemove(entry)?.let {
+                        balance(it)
+                    }
+                    if (VALIDATE) {
+                        validateState()
+                    }
+                    shouldContinue = true
+                    break
+                }
+            }
+        }
 
         if (VALIDATE) {
             validateState()
@@ -385,130 +333,130 @@ class DataTreeImpl<K, V>(private val comparator: Comparator<K>) : DataTree<K, V>
         }
     }
 
-    private fun getThisOrHigher(key: K): Entry<K, V>? {
-        var entry: Entry<K, V>? = root ?: return null
-        var result: Entry<K, V>? = null
-        while (entry != null) {
-            val diff = comparator.compare(entry.key, key)
-            if (diff == 0) {
-                result = entry
-                break
-            } else if (diff > 0) {
-                result = entry
-                entry = entry.left
-            } else {
-                entry = entry.right
-            }
+    override fun remove(key: K): V? {
+        cached = null
+        val (value, toBalance) = doRemove(key) ?: return null
+        if (toBalance != null) {
+            balance(toBalance)
         }
-        return result
+        if (VALIDATE) {
+            validateState()
+        }
+        return value
     }
 
-    private fun applyHeightDiff(diff: Int, entry: Entry<K, V>?) {
-        if (entry == null) {
-            return
+    private fun doRemove(key: K): Pair<V, Entry<K, V>?>? {
+        var entry = root ?: return null
+        while (true) {
+            val cmp = comparator.compare(key, entry.key)
+            entry = when {
+                cmp < 0 -> entry.left ?: return null
+                cmp > 0 -> entry.right ?: return null
+                else -> {
+                    return entry.value to doRemove(entry)
+                }
+            }
         }
-        entry._height += diff
-        applyHeightDiff(diff, entry.left)
-        applyHeightDiff(diff, entry.right)
+    }
+
+    private fun doRemove(entry: Entry<K, V>): Entry<K, V>? {
+        if (entry.left == null || entry.right == null) {
+            entry.parent?.let { parent ->
+                val newChild = entry.left ?: entry.right
+                if (entry.leftChild) {
+                    parent.left = newChild
+                } else {
+                    parent.right = newChild
+                }
+                refreshHeightUp(parent)
+            }
+            entry.left?.parent = entry.parent
+            entry.right?.parent = entry.parent
+            if (entry.parent == null) {
+                root = entry.left ?: entry.right
+            }
+            return entry.parent
+        }
+        else {
+            val replacement = removeMin(entry.right!!)
+            when {
+                root == entry -> root = replacement
+                entry.leftChild -> entry.parent?.left = replacement
+                entry.rightChild -> entry.parent?.right = replacement
+            }
+            val replacementParent = replacement.parent
+            replacement.parent = entry.parent
+            replacement.left = entry.left
+            replacement.right = entry.right
+            entry.left?.let {
+                it.parent = replacement
+            }
+            entry.right?.let {
+                it.parent = replacement
+            }
+            refreshHeightUp(replacement)
+            return if (replacementParent == null || replacementParent == entry) {
+                replacement
+            } else {
+                replacementParent
+            }
+        }
+    }
+
+    private fun removeMin(entry: Entry<K, V>): Entry<K, V> {
+        entry.left?.let {
+            return removeMin(it)
+        }
+        if (entry.leftChild) {
+            entry.parent?.left = entry.right
+        } else if (entry.rightChild) {
+            entry.parent?.right = entry.right
+        }
+        entry.left?.parent = entry.parent
+        entry.right?.parent = entry.parent
+        refreshHeightUp(entry.parent)
+        return entry
     }
 
     override fun removeGreaterThen(key: K) {
         if (DEBUG) {
-            println("$id: DataTreeImpl.removeGreaterThen($key)")
+            log("$id: DataTreeImpl.removeGreaterThen($key)")
         }
-        val limitPoint = getThisOrLower(key)
-
-        if (limitPoint == null) {
-            val r = root
-            if (r != null && comparator.compare(r.key, key) > 0) {
-                root = r.left
-                r.left?.parent = null
-                applyHeightDiff(-1, root)
-            } else {
-                root = null
-            }
-            cached = null
-            return
-        }
-
-        limitPoint.right = null
-        refreshHeightUp(limitPoint)
-
-        // Analogous to removeLowerThen() but mirror-reversed
-
-        var e: Entry<K, V>? = limitPoint
-        while (e != null) {
-            if (e.rightChild) {
-                e = e.parent
-                continue
-            } else if (e.leftChild) {
-                val parent = e.parent
-                val grandFather = parent?.parent
-
-                if (grandFather == null) {
-                    root = e
-                    e.parent = null
-                    break
-                } else {
-                    if (parent.leftChild) {
-                        grandFather.left = e
-                    } else {
-                        grandFather.right = e
-                    }
-                    e.parent = grandFather
-                    refreshHeightUp(e.parent)
-                }
-            } else {
-                break
-            }
-        }
-
-        e = limitPoint
-        do {
-            while (e != null && !e.balanced) {
-                if (e.left.height > e.right.height + 1) {
-                    rotateRight(e)
-                } else if (e.right.height > e.left.height + 1) {
-                    rotateLeft(e)
-                }
-            }
-            e = e?.parent
-        } while (e != null)
-
-
         cached = null
+        var shouldContinue = true
+        while (shouldContinue) {
+            var entry = root
+            shouldContinue = false
+            while (entry != null) {
+                val cmp = comparator.compare(key, entry.key)
+                if (cmp >= 0) {
+                    entry = entry.right
+                } else {
+                    doRemove(entry)?.let {
+                        balance(it)
+                    }
+                    if (VALIDATE) {
+                        validateState()
+                    }
+                    shouldContinue = true
+                    break
+                }
+            }
+        }
 
         if (VALIDATE) {
             validateState()
         }
     }
 
-    private fun getThisOrLower(key: K): Entry<K, V>? {
-        var entry: Entry<K, V>? = root ?: return null
-        var result: Entry<K, V>? = null
-        while (entry != null) {
-            val diff = comparator.compare(entry.key, key)
-            if (diff == 0) {
-                result = entry
-                break
-            } else if (diff > 0) {
-                entry = entry.left
-            } else {
-                result = entry
-                entry = entry.right
-            }
-        }
-        return result
-    }
-
-    private fun rotateLeft(x: Entry<K, V>): Entry<K, V>? {
+    private fun rotateLeft(x: Entry<K, V>): Entry<K, V> {
         //     x             y
         //    / \           / \
         //  t1  y     ->   x  t3
         //     / \        / \
         //   t2  t3     t1  t2
 
-        val y = x.right ?: return null
+        val y = x.right ?: return x
         val t2 = y.left
 
         y.left = x
@@ -540,14 +488,14 @@ class DataTreeImpl<K, V>(private val comparator: Comparator<K>) : DataTree<K, V>
         return y
     }
 
-    private fun rotateRight(y: Entry<K, V>): Entry<K, V>? {
+    private fun rotateRight(y: Entry<K, V>): Entry<K, V> {
         //       y            x
         //      / \          / \
         //     x  t3   ->  t1  y
         //    / \             / \
         //  t1  t2          t2  t3
 
-        val x = y.left ?: return null
+        val x = y.left ?: return y
         val t2 = x.right
 
         x.right = y
@@ -556,8 +504,8 @@ class DataTreeImpl<K, V>(private val comparator: Comparator<K>) : DataTree<K, V>
             t2.parent = y
         }
 
-        y._height = max(y.left.height, y.right.height) + 1
-        x._height = max(x.left.height, x.right.height) + 1
+        y.refreshHeight()
+        x.refreshHeight()
 
         val parent = y.parent
         x.parent = parent
@@ -586,19 +534,22 @@ class DataTreeImpl<K, V>(private val comparator: Comparator<K>) : DataTree<K, V>
 
     private fun validateState(entry: Entry<K, V>, parent: Entry<K, V>?) {
         if (entry.parent !== parent) {
-            throw IllegalStateException("Expected that ${entry.key} has parent ${parent?.key ?: "<null>"} but it has ${entry.parent?.key ?: "<null>"}. Current keys: $keys")
+            throw IllegalStateException("Expected that ${entry.key} has parent ${parent?.key ?: "<null>"} but "
+                                        + "it has ${entry.parent?.key ?: "<null>"}. Current keys: $keys")
         }
 
         val realHeight = calculateHeight(entry)
         if (realHeight != entry._height) {
-            throw IllegalStateException("Height ${entry._height} is stored for ${entry.key} but real height is $realHeight. Current keys: $keys")
+            throw IllegalStateException("Height ${entry._height} is stored for ${entry.key} but real height "
+                                        + "is $realHeight. Current keys: $keys")
         }
 
         val leftHeight = calculateHeight(entry.left)
         val rightHeight = calculateHeight(entry.right)
         val diff = leftHeight - rightHeight
         if (diff < -1 || diff > 1) {
-            throw IllegalStateException("${entry.key} is unbalanced - left height is $leftHeight, right height is $rightHeight. Current keys: $keys")
+            throw IllegalStateException("${entry.key} is unbalanced - left height is $leftHeight, right height"
+                                        + " is $rightHeight. Current keys: $keys")
         }
 
         entry.left?.let { validateState(it, entry) }
@@ -612,11 +563,33 @@ class DataTreeImpl<K, V>(private val comparator: Comparator<K>) : DataTree<K, V>
         return max(calculateHeight(entry.left), calculateHeight(entry.right)) + 1
     }
 
+    /**
+     * Allows to generate tree visualization instruction for graphviz - http://www.webgraphviz.com
+     */
+    @Suppress("unused")
+    private fun generateGraphviz(): String {
+        val buffer = StringBuilder()
+        buffer.append("digraph G {\n")
+        val toProcess = Stack<Entry<K, V>>()
+        root?.let { toProcess += it }
+        while (!toProcess.isEmpty()) {
+            val entry = toProcess.pop()
+            entry.left?.let { left ->
+                buffer.append("  ${entry.key} -> ${left.key}\n")
+                toProcess += left
+            }
+            entry.right?.let { right ->
+                buffer.append("  ${entry.key} -> ${right.key}\n")
+                toProcess += right
+            }
+        }
+        buffer.append("}")
+        return buffer.toString()
+    }
+
     companion object {
         private val DEBUG = java.lang.Boolean.getBoolean("debug.data.tree")
-
         private val VALIDATE = java.lang.Boolean.getBoolean("validate.data.tree")
-
         private val COUNTER = AtomicInteger()
     }
 
@@ -642,12 +615,6 @@ class DataTreeImpl<K, V>(private val comparator: Comparator<K>) : DataTree<K, V>
         val rightChild: Boolean
             get() {
                 return parent?.right === this
-            }
-
-        val balanced: Boolean
-            get() {
-                val diff = (left?._height ?: 0) - (right?._height ?: 0)
-                return diff >= -1 && diff <= 1
             }
 
         fun refreshHeight() {

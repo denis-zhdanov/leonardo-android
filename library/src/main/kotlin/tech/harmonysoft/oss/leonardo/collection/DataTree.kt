@@ -22,6 +22,8 @@ interface DataTree<K, V> {
 
     fun put(key: K, value: V)
 
+    fun remove(key: K): V?
+
     fun removeLowerThen(key: K)
 
     fun removeGreaterThen(key: K)
