@@ -16,6 +16,7 @@ import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil
 import tech.harmonysoft.oss.leonardo.view.util.RoundedRectangleDrawer
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToLong
 
 class ChartView @JvmOverloads constructor(
     context: Context,
@@ -186,7 +187,7 @@ class ChartView @JvmOverloads constructor(
         val effectiveDeltaVisualX = deltaVisualX + drawData.xAxis.visualShift
         drawData.refresh()
         val currentXRange = drawData.xAxis.range
-        val deltaDataX = (-effectiveDeltaVisualX / drawData.xAxis.unitSize).toLong()
+        val deltaDataX = (effectiveDeltaVisualX / drawData.xAxis.unitSize).toLong()
 
 //        var minDataX = java.lang.Long.MAX_VALUE
 //        var maxDataX = java.lang.Long.MIN_VALUE
@@ -212,7 +213,7 @@ class ChartView @JvmOverloads constructor(
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        val width = View.MeasureSpec.getSize(widthMeasureSpec)
+        val width = MeasureSpec.getSize(widthMeasureSpec)
         if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
             setMeasuredDimension(width, width)
         } else {
@@ -493,7 +494,7 @@ class ChartView @JvmOverloads constructor(
                                                                    next.y.toFloat()),
                                                        VisualPoint(next.x.toFloat(),
                                                                    next.y.toFloat()))
-                    Math.round(formula.getY(dataX.toFloat()).toDouble())
+                    formula.getY(dataX.toFloat()).toDouble().roundToLong()
                 }
             }
 
@@ -556,7 +557,7 @@ class ChartView @JvmOverloads constructor(
             context.tooNarrow = true
         }
 
-        context.legendWidth = Math.max(legendTitleWidth, legendTextWidth) + context.horizontalPadding * 2
+        context.legendWidth = max(legendTitleWidth, legendTextWidth) + context.horizontalPadding * 2
         return true
     }
 
@@ -576,7 +577,7 @@ class ChartView @JvmOverloads constructor(
             }
             val valueWidth = drawData.getLegendValueWidth(value)
             val legendWidth = drawData.getYLabelWidth(dataSource.legend)
-            legendTextWidth += Math.max(valueWidth, legendWidth)
+            legendTextWidth += max(valueWidth, legendWidth)
             if (first) {
                 first = false
             } else {
@@ -724,7 +725,7 @@ class ChartView @JvmOverloads constructor(
                 color = dataSource.color
             })
 
-            x += Math.max(drawData.getLegendValueWidth(value), drawData.getYLabelWidth(dataSource.legend))
+            x += max(drawData.getLegendValueWidth(value), drawData.getYLabelWidth(dataSource.legend))
             x += context.horizontalPadding.toFloat()
         }
     }
