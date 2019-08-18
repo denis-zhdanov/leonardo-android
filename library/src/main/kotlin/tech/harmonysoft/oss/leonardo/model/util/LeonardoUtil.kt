@@ -5,6 +5,7 @@ import android.graphics.Color
 import android.util.TypedValue
 import tech.harmonysoft.oss.leonardo.collection.DataTree
 import tech.harmonysoft.oss.leonardo.model.DataPoint
+import tech.harmonysoft.oss.leonardo.view.chart.ChangeAnchor
 import tech.harmonysoft.oss.leonardo.view.chart.ChartView
 import tech.harmonysoft.oss.leonardo.view.navigator.NavigatorShowcase
 
@@ -123,8 +124,8 @@ object LeonardoUtil {
             override val visualXShift: Float
                 get() = view.xVisualShift
 
-            override fun scrollHorizontally(deltaVisualX: Float) {
-                view.scrollHorizontally(deltaVisualX)
+            override fun applyVisualXChange(deltaVisualX: Float, anchor: ChangeAnchor) {
+                view.applyVisualXChange(deltaVisualX, anchor)
             }
         }
     }

@@ -18,7 +18,7 @@ import tech.harmonysoft.oss.leonardo.model.config.navigator.NavigatorConfig
 import tech.harmonysoft.oss.leonardo.model.data.ChartDataSource
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModel
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModelListener
-import tech.harmonysoft.oss.leonardo.view.navigator.NavigatorChartView.ActionType.*
+import tech.harmonysoft.oss.leonardo.view.chart.ChangeAnchor
 import tech.harmonysoft.oss.leonardo.view.chart.ChartView
 import kotlin.math.max
 
@@ -68,7 +68,7 @@ class NavigatorChartView @JvmOverloads constructor(
     private lateinit var activeBackgroundPaint: Paint
     private lateinit var activeBorderPaint: Paint
 
-    private var currentAction: ActionType? = null
+    private var currentAction: ChangeAnchor? = null
     private var previousActionVisualX = Float.NaN
 
     private var skipRangeEvent = false
@@ -172,12 +172,25 @@ class NavigatorChartView @JvmOverloads constructor(
     private fun onShowCaseRangeChanged() {
         val showCaseRange = model.getActiveRange(showCase.dataAnchor)
         val navigatorRange = model.getActiveRange(view.dataAnchor)
-        if (showCaseRange.start < navigatorRange.start) {
-            setNewRange(navigatorRange.shift(showCaseRange.start - navigatorRange.start))
+        val newRange = if (showCaseRange.start < navigatorRange.start) {
+            if (currentAction == ChangeAnchor.LEFT_EDGE) {
+                Range(showCaseRange.start, navigatorRange.end)
+            } else {
+                navigatorRange.shift(showCaseRange.start - navigatorRange.start)
+            }
         } else if (showCaseRange.end > navigatorRange.end) {
-            setNewRange(navigatorRange.shift(showCaseRange.end - navigatorRange.end))
+            if (currentAction == ChangeAnchor.RIGHT_EDGE) {
+                Range(navigatorRange.start, showCaseRange.end)
+            } else {
+                navigatorRange.shift(showCaseRange.end - navigatorRange.end)
+            }
+        } else {
+            null
         }
-        invalidate()
+        if (newRange != null) {
+            setNewRange(newRange)
+            invalidate()
+        }
     }
 
     private fun setNewRange(range: Range) {
@@ -363,31 +376,10 @@ class NavigatorChartView @JvmOverloads constructor(
             return
         }
 
-        if (currentAction == MOVE_COMPLETE_ACTIVE_INTERVAL) {
-            moveCompleteInterval(navigatorVisualDeltaX)
-        } else if (currentAction == MOVE_ACTIVE_INTERVAL_START) {
-            val showCaseDataRange = model.getActiveRange(showCase.dataAnchor)
-            val endRangeVisualX = view.dataMapper.dataXToVisualX(showCaseDataRange.end)
-            if (endRangeVisualX - visualX < MIN_WIDTH_IN_PIXELS) {
-                // Don't allow selector to become too narrow
-                return
-            }
-            val newStartDataX = view.dataMapper.visualXToDataX(max(visualX, 0f))
-            if (newStartDataX != showCaseDataRange.start) {
-                model.setActiveRange(Range(newStartDataX, showCaseDataRange.end), showCase.dataAnchor)
-            }
-        } else {
-            val showCaseDataRange = model.getActiveRange(showCase.dataAnchor)
-            val myDataRange = model.getActiveRange(_dataAnchor)
-            val startRangeVisualX = view.dataMapper.dataXToVisualX(showCaseDataRange.start)
-            if (visualX - startRangeVisualX < MIN_WIDTH_IN_PIXELS) {
-                // Don't allow selector to become too narrow
-                return
-            }
-            val newEndDataX = view.dataMapper.visualXToDataX(max(visualX, 0f))
-            if (newEndDataX <= myDataRange.end && newEndDataX != showCaseDataRange.end) {
-                model.setActiveRange(Range(showCaseDataRange.start, newEndDataX), showCase.dataAnchor)
-            }
+        when (currentAction) {
+            ChangeAnchor.WHOLE_INTERVAL -> moveCompleteInterval(navigatorVisualDeltaX)
+            ChangeAnchor.LEFT_EDGE -> moveIntervalStart(navigatorVisualDeltaX)
+            ChangeAnchor.RIGHT_EDGE -> moveIntervalEnd(navigatorVisualDeltaX)
         }
     }
 
@@ -424,7 +416,63 @@ class NavigatorChartView @JvmOverloads constructor(
             }
         }
 
-        showCase.scrollHorizontally(-deltaVisualX * showCaseVisualRatio)
+        showCase.applyVisualXChange(-deltaVisualX * showCaseVisualRatio, ChangeAnchor.WHOLE_INTERVAL)
+        invalidate()
+    }
+
+    private fun moveIntervalStart(deltaVisualX: Float) {
+        val showCaseDataRange = model.getActiveRange(showCase.dataAnchor)
+        val showCaseStartVisualX = view.dataMapper.dataXToVisualX(showCaseDataRange.start)
+        if (deltaVisualX > 0) {
+            if (showCaseStartVisualX - deltaVisualX < navigatorVisualShift) {
+                if (leftEdgeAutoExpand) {
+                    return
+                }
+                mayBeStopAutoExpand()
+                leftEdgeAutoExpand = true
+                startAnimation()
+                return
+            }
+        } else if (deltaVisualX < 0) {
+            if (leftEdgeAutoExpand) {
+                mayBeStopAutoExpand()
+            }
+            val endRangeVisualX = view.dataMapper.dataXToVisualX(showCaseDataRange.end)
+            if (endRangeVisualX - (showCaseStartVisualX - deltaVisualX) < MIN_WIDTH_IN_PIXELS) {
+                // Don't allow selector to become too narrow
+                return
+            }
+
+        }
+        showCase.applyVisualXChange(-deltaVisualX * showCaseVisualRatio, ChangeAnchor.LEFT_EDGE)
+        invalidate()
+    }
+
+    private fun moveIntervalEnd(deltaVisualX: Float) {
+        val showCaseDataRange = model.getActiveRange(showCase.dataAnchor)
+        val showCaseEndVisualX = view.dataMapper.dataXToVisualX(showCaseDataRange.end)
+        if (deltaVisualX < 0) {
+            if (showCaseEndVisualX - deltaVisualX > width) {
+                if (rightEdgeAutoExpand) {
+                    return
+                }
+                mayBeStopAutoExpand()
+                rightEdgeAutoExpand = true
+                startAnimation()
+                return
+            }
+        } else if (deltaVisualX > 0) {
+            if (rightEdgeAutoExpand) {
+                mayBeStopAutoExpand()
+            }
+            val showCaseStartVisualX = view.dataMapper.dataXToVisualX(showCaseDataRange.start)
+            if (showCaseEndVisualX - deltaVisualX - showCaseStartVisualX < MIN_WIDTH_IN_PIXELS) {
+                // Don't allow selector to become too narrow
+                return
+            }
+
+        }
+        showCase.applyVisualXChange(-deltaVisualX * showCaseVisualRatio, ChangeAnchor.RIGHT_EDGE)
         invalidate()
     }
 
@@ -450,13 +498,10 @@ class NavigatorChartView @JvmOverloads constructor(
         }
         val action = currentAction ?: return
 
-        if (action == MOVE_COMPLETE_ACTIVE_INTERVAL) {
-            val absToScroll = (width / 50) * elapsed / 100f
-            val direction = if (leftEdgeAutoExpand) -1 else 1
-            val toScroll = absToScroll * direction * showCaseVisualRatio
-            showCase.scrollHorizontally(toScroll)
-            return
-        }
+        val absPxToChange = (width / 50) * elapsed / 100f
+        val direction = if (leftEdgeAutoExpand) -1 else 1
+        val pxToChange = absPxToChange * direction * showCaseVisualRatio
+        showCase.applyVisualXChange(pxToChange, action)
     }
 
     private fun release(visualX: Float) {
@@ -467,7 +512,7 @@ class NavigatorChartView @JvmOverloads constructor(
         invalidate()
     }
 
-    private fun getActionType(x: Float): ActionType? {
+    private fun getActionType(x: Float): ChangeAnchor? {
         val activeRange = model.getActiveRange(showCase.dataAnchor)
         if (activeRange.empty) {
             return null
@@ -484,9 +529,9 @@ class NavigatorChartView @JvmOverloads constructor(
         }
 
         return when {
-            x <= startX -> MOVE_ACTIVE_INTERVAL_START
-            x >= endX -> MOVE_ACTIVE_INTERVAL_END
-            else -> MOVE_COMPLETE_ACTIVE_INTERVAL
+            x <= startX -> ChangeAnchor.LEFT_EDGE
+            x >= endX -> ChangeAnchor.RIGHT_EDGE
+            else -> ChangeAnchor.WHOLE_INTERVAL
         }
     }
 
@@ -499,9 +544,5 @@ class NavigatorChartView @JvmOverloads constructor(
 
     companion object {
         private const val MIN_WIDTH_IN_PIXELS: Long = 40
-    }
-
-    private enum class ActionType {
-        MOVE_COMPLETE_ACTIVE_INTERVAL, MOVE_ACTIVE_INTERVAL_START, MOVE_ACTIVE_INTERVAL_END
     }
 }

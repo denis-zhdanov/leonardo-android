@@ -1,6 +1,7 @@
 package tech.harmonysoft.oss.leonardo.view.navigator
 
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModel
+import tech.harmonysoft.oss.leonardo.view.chart.ChangeAnchor
 
 interface NavigatorShowcase {
 
@@ -11,5 +12,5 @@ interface NavigatorShowcase {
 
     val visualXShift: Float
 
-    fun scrollHorizontally(deltaVisualX: Float)
+    fun applyVisualXChange(deltaVisualX: Float, anchor: ChangeAnchor)
 }

@@ -183,7 +183,7 @@ class ChartView @JvmOverloads constructor(
         dataSources.sortBy { it.legend }
     }
 
-    fun scrollHorizontally(deltaVisualX: Float) {
+    fun applyVisualXChange(deltaVisualX: Float, anchor: ChangeAnchor) {
         val effectiveDeltaVisualX = deltaVisualX + drawData.xAxis.visualShift
         drawData.refresh()
         val currentXRange = drawData.xAxis.range
@@ -207,7 +207,12 @@ class ChartView @JvmOverloads constructor(
 
         drawData.xAxis.visualShift = effectiveDeltaVisualX % drawData.xAxis.unitSize
         if (deltaDataX != 0L) {
-            model.setActiveRange(currentXRange.shift(deltaDataX), dataAnchor)
+            val newRange = when (anchor) {
+                ChangeAnchor.WHOLE_INTERVAL -> currentXRange.shift(deltaDataX)
+                ChangeAnchor.LEFT_EDGE -> Range(currentXRange.start + deltaDataX, currentXRange.end)
+                ChangeAnchor.RIGHT_EDGE -> Range(currentXRange.start, currentXRange.end + deltaDataX)
+            }
+            model.setActiveRange(newRange, dataAnchor)
         }
         invalidate()
     }
