@@ -5,7 +5,10 @@ import android.content.Context
 import android.content.res.Configuration
 import android.graphics.*
 import android.util.AttributeSet
+import android.view.GestureDetector
+import android.view.MotionEvent
 import android.view.View
+import androidx.core.view.GestureDetectorCompat
 import tech.harmonysoft.oss.leonardo.model.DataPoint
 import tech.harmonysoft.oss.leonardo.model.LineFormula
 import tech.harmonysoft.oss.leonardo.model.Range
@@ -32,6 +35,17 @@ class ChartView @JvmOverloads constructor(
      * Keep own data sources list in order to work with them in lexicographically, e.g. when showing selection legend
      */
     private val dataSources = mutableListOf<ChartDataSource>()
+
+    private val gestureDetector = GestureDetectorCompat(context, object : GestureDetector.SimpleOnGestureListener() {
+        override fun onScroll(e1: MotionEvent?, e2: MotionEvent?, distanceX: Float, distanceY: Float): Boolean {
+            onScroll(distanceX)
+            return true
+        }
+
+        override fun onDown(e: MotionEvent?): Boolean {
+            return true
+        }
+    })
 
     private val drawContext = PlotDrawContext()
     private val drawerCallback: (DataPoint) -> Boolean = this::doDraw
@@ -176,40 +190,6 @@ class ChartView @JvmOverloads constructor(
         dataSources.clear()
         dataSources.addAll(model.registeredDataSources)
         dataSources.sortBy { it.legend }
-    }
-
-    fun applyVisualXChange(deltaVisualX: Float, anchor: ChangeAnchor) {
-        val effectiveDeltaVisualX = deltaVisualX + drawData.xAxis.visualShift
-        drawData.refresh()
-        val currentXRange = drawData.xAxis.range
-        val deltaDataX = (effectiveDeltaVisualX / drawData.xAxis.unitSize).toLong()
-
-//        var minDataX = java.lang.Long.MAX_VALUE
-//        var maxDataX = java.lang.Long.MIN_VALUE
-//        for (activeDataSource in dataSources) {
-//            val range = activeDataSource.getDataRange()
-//            if (range.getStart() > java.lang.Long.MIN_VALUE && range.getStart() < minDataX) {
-//                minDataX = range.getStart()
-//            }
-//            if (range.getEnd() < java.lang.Long.MAX_VALUE && range.getEnd() > maxDataX) {
-//                maxDataX = range.getEnd()
-//            }
-//        }
-//        if (deltaDataX > 0 && currentXRange.contains(maxDataX) || deltaDataX < 0 && currentXRange.contains(minDataX)) {
-//            // We can't scroll more as we're already at the min/max possible edge
-//            return
-//        }
-
-        drawData.xAxis.visualShift = effectiveDeltaVisualX % drawData.xAxis.unitSize
-        if (deltaDataX != 0L) {
-            val newRange = when (anchor) {
-                ChangeAnchor.WHOLE_INTERVAL -> currentXRange.shift(deltaDataX)
-                ChangeAnchor.LEFT_EDGE -> Range(currentXRange.start + deltaDataX, currentXRange.end)
-                ChangeAnchor.RIGHT_EDGE -> Range(currentXRange.start, currentXRange.end + deltaDataX)
-            }
-            model.setActiveRange(newRange, dataAnchor)
-        }
-        invalidate()
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -728,6 +708,16 @@ class ChartView @JvmOverloads constructor(
             x += max(drawData.getLegendValueWidth(value), drawData.getYLabelWidth(dataSource.legend))
             x += context.horizontalPadding.toFloat()
         }
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    override fun onTouchEvent(event: MotionEvent?): Boolean {
+        return gestureDetector.onTouchEvent(event)
+    }
+
+    private fun onScroll(deltaVisualX: Float) {
+        val deltaDataX = (deltaVisualX / drawData.xAxis.unitSize).toLong()
+        model.setActiveRange(model.getActiveRange(dataAnchor).shift(deltaDataX), dataAnchor)
     }
 
     private data class ValueInfo(val dataValue: Long, val visualValue: Float)
