@@ -6,12 +6,14 @@ import android.content.res.Configuration
 import android.graphics.*
 import android.util.AttributeSet
 import android.view.View
-import tech.harmonysoft.oss.leonardo.model.*
+import tech.harmonysoft.oss.leonardo.model.DataPoint
+import tech.harmonysoft.oss.leonardo.model.LineFormula
+import tech.harmonysoft.oss.leonardo.model.Range
+import tech.harmonysoft.oss.leonardo.model.VisualPoint
 import tech.harmonysoft.oss.leonardo.model.config.chart.ChartConfig
 import tech.harmonysoft.oss.leonardo.model.data.ChartDataSource
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModel
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModelListener
-import tech.harmonysoft.oss.leonardo.model.runtime.DataMapper
 import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil
 import tech.harmonysoft.oss.leonardo.view.util.RoundedRectangleDrawer
 import kotlin.math.max
@@ -25,13 +27,6 @@ class ChartView @JvmOverloads constructor(
 ) : View(context, attributes, defaultStyle) {
 
     val dataAnchor: Any get() = _dataAnchor
-    val dataMapper: DataMapper by lazy {
-        drawData
-    }
-    val xVisualShift: Float
-        get() {
-            return drawData.xAxis.visualShift
-        }
 
     /**
      * Keep own data sources list in order to work with them in lexicographically, e.g. when showing selection legend

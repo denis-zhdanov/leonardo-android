@@ -4,7 +4,6 @@ import android.content.Context
 import com.google.common.eventbus.EventBus
 import dagger.Module
 import dagger.Provides
-import tech.harmonysoft.oss.leonardo.example.scroll.ScrollManager
 import tech.harmonysoft.oss.leonardo.example.settings.SettingsManager
 import tech.harmonysoft.oss.leonardo.example.view.ChartInitializer
 import tech.harmonysoft.oss.leonardo.example.view.SeparatorViewFactory
@@ -33,16 +32,11 @@ class LeonardoModule(private val context: Context) {
 
     @Provides
     @Singleton
-    fun providesScrollManager(): ScrollManager {
-        return ScrollManager()
-    }
-
-    @Provides
-    @Singleton
-    fun providesChartInitializer(scrollManager: ScrollManager,
-                                 settingsManager: SettingsManager,
-                                 eventBus: EventBus): ChartInitializer {
-        return ChartInitializer(scrollManager, settingsManager, eventBus)
+    fun providesChartInitializer(
+        settingsManager: SettingsManager,
+        eventBus: EventBus
+    ): ChartInitializer {
+        return ChartInitializer(settingsManager, eventBus)
     }
 
     @Provides

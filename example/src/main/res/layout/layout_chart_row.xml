@@ -31,12 +31,6 @@
 
     </FrameLayout>
 
-    <tech.harmonysoft.oss.leonardo.view.navigator.NavigatorChartView
-            android:id="@+id/row_navigator"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/app_padding"/>
-
     <LinearLayout
             android:id="@+id/row_settings"
             android:orientation="horizontal"

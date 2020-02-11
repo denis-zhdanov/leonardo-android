@@ -1,14 +1,14 @@
-<tech.harmonysoft.oss.leonardo.example.scroll.MyScrollView
+<ScrollView
         xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:scrollbars="none">
 
-    <LinearLayout
-            android:id="@+id/charts"
-            android:orientation="vertical"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            style="@style/Charts.Light"/>
+        <LinearLayout
+                android:id="@+id/charts"
+                android:orientation="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                style="@style/Charts.Light"/>
 
-</tech.harmonysoft.oss.leonardo.example.scroll.MyScrollView>
+</ScrollView>

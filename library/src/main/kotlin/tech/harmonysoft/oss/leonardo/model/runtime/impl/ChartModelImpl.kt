@@ -44,9 +44,7 @@ class ChartModelImpl(private val bufferPagesCount: Int = 3, workersPool: Executo
     override val hasSelection get() = _hasSelection
     override var selectedX: Long
         get() {
-            if (!_hasSelection) {
-                throw IllegalStateException("Detected a call for a selection when there is no selection")
-            }
+            check(_hasSelection) { "Detected a call for a selection when there is no selection" }
             return _selectedX
         }
         set(value) {
@@ -118,11 +116,9 @@ class ChartModelImpl(private val bufferPagesCount: Int = 3, workersPool: Executo
     override val registeredDataSources get() = points.keys
 
     override fun addDataSource(dataSource: ChartDataSource) {
-        if (points.containsKey(dataSource)) {
-            throw IllegalArgumentException(
-                "Data source '$dataSource' is already registered (all registered "
-                + "data sources: ${points.keys})"
-            )
+        require(!points.containsKey(dataSource)) {
+            "Data source '$dataSource' is already registered (all registered data " +
+            "sources: ${points.keys})"
         }
         points[dataSource] = DataTreeImpl(LONG_COMPARATOR)
         loadedRanges[dataSource] = RangesList()
@@ -134,8 +130,8 @@ class ChartModelImpl(private val bufferPagesCount: Int = 3, workersPool: Executo
     }
 
     override fun removeDataSource(dataSource: ChartDataSource) {
-        if (!points.containsKey(dataSource)) {
-            throw IllegalArgumentException("Data source '$dataSource' is not registered. Registered: ${points.keys}")
+        require(points.containsKey(dataSource)) {
+            "Data source '$dataSource' is not registered. Registered: ${points.keys}"
         }
         points.remove(dataSource)
         loadedRanges.remove(dataSource)
@@ -147,8 +143,8 @@ class ChartModelImpl(private val bufferPagesCount: Int = 3, workersPool: Executo
     }
 
     override fun disableDataSource(dataSource: ChartDataSource) {
-        if (!points.containsKey(dataSource)) {
-            throw IllegalArgumentException("Data source '$dataSource' is not registered. Registered: ${points.keys}")
+        require(points.containsKey(dataSource)) {
+            "Data source '$dataSource' is not registered. Registered: ${points.keys}"
         }
         val changed = disabledDataSources.add(dataSource)
         if (changed) {
@@ -159,8 +155,8 @@ class ChartModelImpl(private val bufferPagesCount: Int = 3, workersPool: Executo
     }
 
     override fun enableDataSource(dataSource: ChartDataSource) {
-        if (!points.containsKey(dataSource)) {
-            throw IllegalArgumentException("Data source '$dataSource' is not registered. Registered: ${points.keys}")
+        require(points.containsKey(dataSource)) {
+            "Data source '$dataSource' is not registered. Registered: ${points.keys}"
         }
         val changed = disabledDataSources.remove(dataSource)
         if (changed) {
@@ -251,13 +247,13 @@ class ChartModelImpl(private val bufferPagesCount: Int = 3, workersPool: Executo
     }
 
     private fun notifyListeners(action: (ChartModelListener) -> Unit) {
-        listeners.forEach {
-            if (!it.notificationInProgress) {
-                it.notificationInProgress = true
+        for (listener in listeners) {
+            if (!listener.notificationInProgress) {
+                listener.notificationInProgress = true
                 try {
-                    action(it.listener)
+                    action(listener.listener)
                 } finally {
-                    it.notificationInProgress = false
+                    listener.notificationInProgress = false
                 }
             }
         }

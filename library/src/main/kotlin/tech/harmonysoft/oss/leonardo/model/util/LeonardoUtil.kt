@@ -5,9 +5,6 @@ import android.graphics.Color
 import android.util.TypedValue
 import tech.harmonysoft.oss.leonardo.collection.DataTree
 import tech.harmonysoft.oss.leonardo.model.DataPoint
-import tech.harmonysoft.oss.leonardo.view.chart.ChangeAnchor
-import tech.harmonysoft.oss.leonardo.view.chart.ChartView
-import tech.harmonysoft.oss.leonardo.view.navigator.NavigatorShowcase
 
 object LeonardoUtil {
 
@@ -114,19 +111,6 @@ object LeonardoUtil {
             return typedArray.getInt(0, 300)
         } finally {
             typedArray.recycle()
-        }
-    }
-
-    fun asNavigatorShowCase(view: ChartView): NavigatorShowcase {
-        return object : NavigatorShowcase {
-            override val dataAnchor get() = view.dataAnchor
-
-            override val visualXShift: Float
-                get() = view.xVisualShift
-
-            override fun applyVisualXChange(deltaVisualX: Float, anchor: ChangeAnchor) {
-                view.applyVisualXChange(deltaVisualX, anchor)
-            }
         }
     }
 

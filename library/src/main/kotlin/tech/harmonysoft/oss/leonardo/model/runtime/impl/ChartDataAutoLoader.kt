@@ -8,7 +8,10 @@ import tech.harmonysoft.oss.leonardo.model.data.ChartDataSource
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModelListener
 import java.util.concurrent.Executor
 
-class ChartDataAutoLoader(private val threadPool: Executor, private val model: ChartModelImpl) : ChartModelListener {
+class ChartDataAutoLoader(
+    private val threadPool: Executor,
+    private val model: ChartModelImpl
+) : ChartModelListener {
 
     private val uiHandler = Handler(Looper.getMainLooper())
 
@@ -80,11 +83,12 @@ class ChartDataAutoLoader(private val threadPool: Executor, private val model: C
                     max
                 }
 
-                val rangeToUse = if (startToUse == rangeToLoad.start && endToUse == rangeToLoad.end) {
-                    rangeToLoad
-                } else {
-                    Range(startToUse, endToUse)
-                }
+                val rangeToUse =
+                    if (startToUse == rangeToLoad.start && endToUse == rangeToLoad.end) {
+                        rangeToLoad
+                    } else {
+                        Range(startToUse, endToUse)
+                    }
 
                 val task = ChartDataLoadTask(dataSource, rangeToUse)
                 tasks += task
