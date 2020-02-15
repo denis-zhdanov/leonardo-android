@@ -1,15 +1,14 @@
-package tech.harmonysoft.oss.leonardo.example.data.input.infinite
+package tech.harmonysoft.oss.leonardo.example.data
 
 import tech.harmonysoft.oss.leonardo.model.data.ChartDataLoader
 import tech.harmonysoft.oss.leonardo.model.data.LoadHandle
 import java.util.*
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 class InfiniteChartDataLoader(private val delayMs: Long? = null) : ChartDataLoader {
 
-    private val cache = ConcurrentHashMap<Long, Long>()
+//    private val cache = ConcurrentHashMap<Long, Long>()
 
     override fun load(from: Long, to: Long, handle: LoadHandle) {
         val action = { doLoad(from, to, handle) }
@@ -24,18 +23,18 @@ class InfiniteChartDataLoader(private val delayMs: Long? = null) : ChartDataLoad
         var prevY: Long? = null
         val random = Random()
         for (x in (from..to)) {
-            val cachedY = cache[x]
-            if (cachedY == null) {
+//            val cachedY = cache[x]
+//            if (cachedY == null) {
                 val sign = if (random.nextBoolean()) 1 else -1
                 val shift = sign * random.nextInt(Y_RANGE_LENGTH / 10) + Y_MIN.toLong()
                 val y = shift + (prevY ?: 0)
-                cache[x] = y
+//                cache[x] = y
                 handle.onPointLoaded(x, y)
                 prevY = y
-            } else {
-                handle.onPointLoaded(x, cachedY)
-                prevY = cachedY
-            }
+//            } else {
+//                handle.onPointLoaded(x, cachedY)
+//                prevY = cachedY
+//            }
         }
         handle.onLoadingEnd()
     }

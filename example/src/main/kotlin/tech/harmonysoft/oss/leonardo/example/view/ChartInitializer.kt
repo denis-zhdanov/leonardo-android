@@ -10,7 +10,7 @@ import android.widget.TextView
 import com.google.common.eventbus.EventBus
 import com.google.common.eventbus.Subscribe
 import tech.harmonysoft.oss.leonardo.example.R
-import tech.harmonysoft.oss.leonardo.example.data.input.predefined.ChartData
+import tech.harmonysoft.oss.leonardo.example.data.ChartData
 import tech.harmonysoft.oss.leonardo.example.event.ThemeChangedEvent
 import tech.harmonysoft.oss.leonardo.example.settings.ChartSettings
 import tech.harmonysoft.oss.leonardo.example.settings.SettingsManager
@@ -156,7 +156,7 @@ class ChartInitializer(private val settingsManager: SettingsManager, eventBus: E
             }
         }
 
-        settings.getRange("chart")?.let { model.setActiveRange(it, chart.dataAnchor) }
+//        settings.getRange("chart")?.let { model.setActiveRange(it, chart.dataAnchor) }
 
         model.addListener(object : ChartModelListenerAdapter() {
             override fun onRangeChanged(anchor: Any) {

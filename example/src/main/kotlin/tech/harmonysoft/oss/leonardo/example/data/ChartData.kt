@@ -1,4 +1,4 @@
-package tech.harmonysoft.oss.leonardo.example.data.input.predefined
+package tech.harmonysoft.oss.leonardo.example.data
 
 import tech.harmonysoft.oss.leonardo.model.Range
 import tech.harmonysoft.oss.leonardo.model.data.ChartDataSource

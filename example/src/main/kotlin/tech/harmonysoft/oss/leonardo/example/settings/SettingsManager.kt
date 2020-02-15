@@ -30,16 +30,6 @@ class SettingsManager(private val context: Context) {
             }
         }
 
-    var activeChartType: ChartType
-        get() {
-            return ChartType.valueOf(preferences.getString(Key.CHART_TYPE, ChartType.STATIC.name)!!)
-        }
-        set(value) {
-            preferences.edit {
-                putString(Key.CHART_TYPE, value.name)
-            }
-        }
-
     fun getChartSettings(chartName: String): ChartSettings {
         return ChartSettings(chartName, preferences)
     }
@@ -50,6 +40,5 @@ class SettingsManager(private val context: Context) {
 
     private object Key {
         const val ACTIVE_THEME = "ACTIVE_THEME"
-        const val CHART_TYPE = "CHART_TYPE"
     }
 }
