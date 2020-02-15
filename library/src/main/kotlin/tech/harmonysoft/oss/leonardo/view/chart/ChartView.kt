@@ -9,7 +9,7 @@ import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
-import android.view.animation.AccelerateDecelerateInterpolator
+import android.view.animation.LinearInterpolator
 import androidx.core.view.GestureDetectorCompat
 import tech.harmonysoft.oss.leonardo.model.DataPoint
 import tech.harmonysoft.oss.leonardo.model.LineFormula
@@ -73,7 +73,7 @@ class ChartView @JvmOverloads constructor(
     private val drawContext = PlotDrawContext()
     private val drawerCallback: (DataPoint) -> Boolean = this::doDraw
 
-    private val flingAnimator = IterationAwareValueAnimator(FLING_DURATION_MILLIS, AccelerateDecelerateInterpolator()) {
+    private val flingAnimator = IterationAwareValueAnimator(FLING_DURATION_MILLIS, LinearInterpolator()) {
         onScroll(it, true)
     }
     private var pendingFlingVisualDeltaX = 0.0f
