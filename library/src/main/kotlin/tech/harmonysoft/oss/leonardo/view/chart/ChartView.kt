@@ -71,6 +71,8 @@ class ChartView @JvmOverloads constructor(
     private val drawContext = PlotDrawContext()
     private val drawerCallback: (DataPoint) -> Boolean = this::doDraw
 
+    private val tmpRect = Rect()
+
     private val flingAnimator = IterationAwareValueAnimator(FLING_DURATION_MILLIS, DecelerateInterpolator()) {
         onScroll(it, true)
     }
@@ -255,8 +257,8 @@ class ChartView @JvmOverloads constructor(
             return
         }
         val y = drawData.chartBottom.toFloat()
-        val clipBounds = canvas.clipBounds
-        if (y <= clipBounds.bottom) {
+        canvas.getClipBounds(tmpRect)
+        if (y <= tmpRect.bottom) {
             canvas.drawLine(0f, y, width.toFloat(), y, palette.gridPaint)
         }
     }
