@@ -6,7 +6,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.Space
-import android.widget.TextView
 import com.google.common.eventbus.EventBus
 import com.google.common.eventbus.Subscribe
 import tech.harmonysoft.oss.leonardo.example.R
@@ -53,7 +52,7 @@ class ChartInitializer(private val settingsManager: SettingsManager, eventBus: E
         setUpProgressUi(model, progress)
 
         addSelectors(row.findViewById(R.id.row_settings), model)
-        setupPersistentSettings(settingsManager.getChartSettings(chartData.name), model, chart)
+        setupPersistentSettings(settingsManager.getChartSettings(chartData.name), model)
 
 //        row.findViewById<TextView>(R.id.row_title).text = chartData.name
 
@@ -145,8 +144,7 @@ class ChartInitializer(private val settingsManager: SettingsManager, eventBus: E
 
     private fun setupPersistentSettings(
         settings: ChartSettings,
-        model: ChartModel,
-        chart: ChartView
+        model: ChartModel
     ) {
         for (dataSource in model.registeredDataSources) {
             if (settings.isDataSourceEnabled(dataSource)) {
@@ -159,12 +157,6 @@ class ChartInitializer(private val settingsManager: SettingsManager, eventBus: E
 //        settings.getRange("chart")?.let { model.setActiveRange(it, chart.dataAnchor) }
 
         model.addListener(object : ChartModelListenerAdapter() {
-            override fun onRangeChanged(anchor: Any) {
-                when (anchor) {
-                    chart.dataAnchor -> settings.storeRange("chart", model.getActiveRange(anchor))
-                }
-            }
-
             override fun onDataSourceEnabled(dataSource: ChartDataSource) {
                 settings.enableDataSource(dataSource)
             }
