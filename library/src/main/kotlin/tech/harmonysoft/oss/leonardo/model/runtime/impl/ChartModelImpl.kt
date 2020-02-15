@@ -248,12 +248,16 @@ class ChartModelImpl(private val bufferPagesCount: Int = 3, workersPool: Executo
         val loadedRanges = loadedRanges[dataSource] ?: return
         loadedRanges.add(range)
         val anchorsWithChangedActiveRange = mutableSetOf<Any>()
+        // Profiling shows that it's cheaper to create an array than iterator for every point iteration
+        val activeRangesEntries = activeRanges.entries.toTypedArray()
         for (point in points) {
             if (_bufferRange.contains(point.x)) {
                 dataSourcePoints.put(point.x, point)
-                for ((anchor, activeRange) in activeRanges) {
-                    if (activeRange.contains(point.x)) {
-                        anchorsWithChangedActiveRange.add(anchor)
+                if (anchorsWithChangedActiveRange.size != activeRanges.size) {
+                    for ((anchor, activeRange) in activeRangesEntries) {
+                        if (activeRange.contains(point.x)) {
+                            anchorsWithChangedActiveRange.add(anchor)
+                        }
                     }
                 }
             }
