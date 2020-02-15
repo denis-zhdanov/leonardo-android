@@ -2,7 +2,6 @@ package tech.harmonysoft.oss.leonardo.view.chart
 
 import tech.harmonysoft.oss.leonardo.model.DataPoint
 import tech.harmonysoft.oss.leonardo.model.Range
-import tech.harmonysoft.oss.leonardo.model.VisualPoint
 import tech.harmonysoft.oss.leonardo.model.config.chart.ChartConfig
 import tech.harmonysoft.oss.leonardo.model.data.ChartDataSource
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModel
@@ -258,10 +257,6 @@ internal class ChartDrawData(
         } else {
             yAxis.dataValueToVisualValue(dataY)
         }
-    }
-
-    override fun dataPointToVisualPoint(dataPoint: DataPoint): VisualPoint {
-        return VisualPoint(dataXToVisualX(dataPoint.x), dataYToVisualY(dataPoint.y))
     }
 }
 

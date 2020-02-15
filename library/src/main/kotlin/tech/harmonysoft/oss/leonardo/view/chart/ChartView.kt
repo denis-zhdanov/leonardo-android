@@ -13,7 +13,6 @@ import android.view.animation.DecelerateInterpolator
 import androidx.core.view.GestureDetectorCompat
 import tech.harmonysoft.oss.leonardo.model.DataPoint
 import tech.harmonysoft.oss.leonardo.model.Range
-import tech.harmonysoft.oss.leonardo.model.VisualPoint
 import tech.harmonysoft.oss.leonardo.model.config.chart.ChartConfig
 import tech.harmonysoft.oss.leonardo.model.data.ChartDataSource
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModel
@@ -387,7 +386,8 @@ class ChartView @JvmOverloads constructor(
             }
         }
 
-        drawContext.previousVisualPoint = null
+        drawContext.previousVisualX = null
+        drawContext.previousVisualY = null
         drawContext.drawn = false
         drawContext.path = Path()
         model.forRangePoints(dataSource,
@@ -401,69 +401,74 @@ class ChartView @JvmOverloads constructor(
     }
 
     private fun doDraw(dataPoint: DataPoint): Boolean {
-        val visualPoint = drawData.dataPointToVisualPoint(dataPoint)
-        val previousVisualPoint = drawContext.previousVisualPoint
-        if (previousVisualPoint == null || visualPoint.x < drawContext.minVisualX) {
-            drawContext.previousVisualPoint = visualPoint
+        val visualX = drawData.dataXToVisualX(dataPoint.x)
+        val visualY = drawData.dataYToVisualY(dataPoint.y)
+        val previousVisualX = drawContext.previousVisualX
+        val previousVisualY = drawContext.previousVisualY
+        if (previousVisualX == null || previousVisualY == null || visualX < drawContext.minVisualX) {
+            drawContext.previousVisualX = visualX
+            drawContext.previousVisualY = visualY
             return true
         }
 
         var x: Float
         var y: Float
-        if (visualPoint.x > drawContext.maxVisualX) {
+        if (visualX > drawContext.maxVisualX) {
             x = drawContext.maxVisualX
-            y = calculateLinePointY(x1 = previousVisualPoint.x,
-                                    y1 = previousVisualPoint.y,
-                                    x2 = visualPoint.x,
-                                    y2 = visualPoint.y,
+            y = calculateLinePointY(x1 = previousVisualX,
+                                    y1 = previousVisualY,
+                                    x2 = visualX,
+                                    y2 = visualY,
                                     targetPointX = x)
             if (y > drawData.chartBottom) {
                 y = drawData.chartBottom.toFloat()
-                x = calculateLinePointX(x1 = previousVisualPoint.x,
-                                        y1 = previousVisualPoint.y,
-                                        x2 = visualPoint.x,
-                                        y2 = visualPoint.y,
+                x = calculateLinePointX(x1 = previousVisualX,
+                                        y1 = previousVisualY,
+                                        x2 = visualX,
+                                        y2 = visualY,
                                         targetPointY = y)
             }
             if (!drawContext.drawn) {
-                drawContext.path.moveTo(previousVisualPoint.x, previousVisualPoint.y)
+                drawContext.path.moveTo(previousVisualX, previousVisualY)
             }
             drawContext.path.lineTo(x, y)
             return false
         }
 
-        if (previousVisualPoint.x < drawContext.minVisualX) {
+        if (previousVisualX < drawContext.minVisualX) {
             x = drawContext.minVisualX
-            y = calculateLinePointY(x1 = previousVisualPoint.x,
-                                    y1 = previousVisualPoint.y,
-                                    x2 = visualPoint.x,
-                                    y2 = visualPoint.y,
+            y = calculateLinePointY(x1 = previousVisualX,
+                                    y1 = previousVisualY,
+                                    x2 = visualX,
+                                    y2 = visualY,
                                     targetPointX = x)
             if (y > drawData.chartBottom) {
                 y = drawData.chartBottom.toFloat()
-                x = calculateLinePointX(x1 = previousVisualPoint.x,
-                                        y1 = previousVisualPoint.y,
-                                        x2 = visualPoint.x,
-                                        y2 = visualPoint.y,
+                x = calculateLinePointX(x1 = previousVisualX,
+                                        y1 = previousVisualY,
+                                        x2 = visualX,
+                                        y2 = visualY,
                                         targetPointY = y)
             }
             drawContext.path.moveTo(x, y)
-            if (visualPoint.x != x || visualPoint.y != y) {
-                drawContext.path.lineTo(visualPoint.x, visualPoint.y)
+            if (visualX != x || visualY != y) {
+                drawContext.path.lineTo(visualX, visualY)
             }
             drawContext.drawn = true
-            drawContext.previousVisualPoint = visualPoint
+            drawContext.previousVisualX = visualX
+            drawContext.previousVisualY = visualY
             return true
         }
 
         if (!drawContext.drawn) {
             drawContext.drawn = true
-            drawContext.path.moveTo(previousVisualPoint.x, previousVisualPoint.y)
+            drawContext.path.moveTo(previousVisualX, previousVisualY)
         }
 
-        if (visualPoint.x - previousVisualPoint.x >= MIN_PLOT_UNIT_PX) {
-            drawContext.path.lineTo(visualPoint.x, visualPoint.y)
-            drawContext.previousVisualPoint = visualPoint
+        if (visualX - previousVisualX >= MIN_PLOT_UNIT_PX) {
+            drawContext.path.lineTo(visualX, visualY)
+            drawContext.previousVisualX = visualX
+            drawContext.previousVisualY = visualY
         }
         return true
     }
@@ -488,7 +493,7 @@ class ChartView @JvmOverloads constructor(
         }
 
         val dataX = model.selectedX
-        val visualX = drawData.dataXToVisualX(dataX)
+        var visualX = drawData.dataXToVisualX(dataX)
         if (visualX < drawData.chartLeft || visualX > width) {
             return
         }
@@ -520,11 +525,13 @@ class ChartView @JvmOverloads constructor(
                 }
             }
 
-            val visualPoint = drawData.dataPointToVisualPoint(DataPoint(dataX, dataY))
-            dataSource2yInfo[dataSource] = ValueInfo(dataY, visualPoint.y)
+            visualX = drawData.dataXToVisualX(dataX)
+            val visualY = drawData.dataYToVisualY(dataY)
+            dataSource2yInfo[dataSource] = ValueInfo(dataY, visualY)
             val yShift = config.plotLineWidthInPixels / 2
             drawSelectionPlotSign(canvas,
-                                  VisualPoint(visualPoint.x, visualPoint.y - yShift),
+                                  visualX,
+                                  visualY - yShift,
                                   dataSource.color)
         }
 
@@ -544,16 +551,16 @@ class ChartView @JvmOverloads constructor(
         }
     }
 
-    private fun drawSelectionPlotSign(canvas: Canvas, point: VisualPoint, color: Int) {
+    private fun drawSelectionPlotSign(canvas: Canvas, visualX: Float, visualY: Float, color: Int) {
         val paint = palette.plotPaint.apply {
             this.color = config.backgroundColor
             style = Paint.Style.FILL
         }
-        canvas.drawCircle(point.x, point.y, config.selectionSignRadiusInPixels.toFloat(), paint)
+        canvas.drawCircle(visualX, visualY, config.selectionSignRadiusInPixels.toFloat(), paint)
 
         paint.color = color
         paint.style = Paint.Style.STROKE
-        canvas.drawCircle(point.x, point.y, config.selectionSignRadiusInPixels.toFloat(), paint)
+        canvas.drawCircle(visualX, visualY, config.selectionSignRadiusInPixels.toFloat(), paint)
     }
 
     private fun drawSelectionLegend(canvas: Canvas, x: Float, dataSource2yInfo: Map<ChartDataSource, ValueInfo>) {
