@@ -49,6 +49,12 @@ class ChartDataAutoLoader(
     override fun onSelectionChange() {
     }
 
+    override fun onMinimum(minX: Long) {
+    }
+
+    override fun onMaximum(maxX: Long) {
+    }
+
     private fun mayBeLoadRanges() {
         val bufferRange = model.bufferRange
 

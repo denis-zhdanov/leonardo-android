@@ -19,4 +19,8 @@ interface ChartModelListener {
     fun onPointsLoadingIterationEnd(dataSource: ChartDataSource)
 
     fun onSelectionChange()
+
+    fun onMinimum(minX: Long)
+
+    fun onMaximum(maxX: Long)
 }

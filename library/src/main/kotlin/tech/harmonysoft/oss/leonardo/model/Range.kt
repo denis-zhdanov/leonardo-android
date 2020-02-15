@@ -55,6 +55,26 @@ data class Range(val start: Long, val end: Long) {
         }
     }
 
+    fun mayBeCut(min: Long?, max: Long?): Range {
+        val startToUse = if (min != null && min > start) {
+            min
+        } else {
+            start
+        }
+
+        val endToUse = if (max != null && max < end) {
+            max
+        } else {
+            end
+        }
+
+        return if (startToUse != start || endToUse != end) {
+            Range(startToUse, endToUse)
+        } else {
+            this
+        }
+    }
+
     companion object {
         val EMPTY_RANGE = Range(0, -1)
     }

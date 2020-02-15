@@ -44,8 +44,6 @@ internal class ChartDrawData(
             return maxYLabelWidth + yAxis.labelPadding
         }
 
-    var maxYLabelWidth = 0
-
     private val drawXLabels = config.xAxisConfig.drawAxis || config.xAxisConfig.drawLabels
     private val animationEnabled = config.animationEnabled
     private val xWidthMeasurer = TextWidthMeasurer { palette.xLabelPaint }
@@ -53,6 +51,8 @@ internal class ChartDrawData(
     private val legendWidthMeasurer = TextWidthMeasurer { palette.legendValuePaint }
     private val plotAnimator = PlotAnimator(view, config.animationDurationMillis)
     private val yRangeUpdater: (DataPoint) -> Boolean = this::updateYDataRange
+
+    private var maxYLabelWidth = 0
 
     private var forceRefresh = false
     private var lastWidth = 0
@@ -92,6 +92,12 @@ internal class ChartDrawData(
             }
 
             override fun onSelectionChange() {
+            }
+
+            override fun onMinimum(minX: Long) {
+            }
+
+            override fun onMaximum(maxX: Long) {
             }
         })
     }

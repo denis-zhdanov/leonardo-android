@@ -11,6 +11,8 @@ import tech.harmonysoft.oss.leonardo.model.util.RangesList
 interface ChartModel {
 
     val hasSelection: Boolean
+    val minX: Long?
+    val maxX: Long?
     var selectedX: Long
     fun resetSelection()
 
@@ -28,6 +30,7 @@ interface ChartModel {
 
     fun getThisOrPrevious(dataSource: ChartDataSource, x: Long): DataPoint?
     fun getThisOrNext(dataSource: ChartDataSource, x: Long): DataPoint?
+    fun getNext(dataSource: ChartDataSource, x: Long): DataPoint?
 
     fun isLoadingInProgress(dataSource: ChartDataSource): Boolean
     fun forRangePoints(dataSource: ChartDataSource,

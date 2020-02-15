@@ -26,4 +26,10 @@ abstract class ChartModelListenerAdapter : ChartModelListener {
 
     override fun onSelectionChange() {
     }
+
+    override fun onMinimum(minX: Long) {
+    }
+
+    override fun onMaximum(maxX: Long) {
+    }
 }

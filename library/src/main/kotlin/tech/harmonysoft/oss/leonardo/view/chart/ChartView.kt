@@ -43,6 +43,11 @@ class ChartView @JvmOverloads constructor(
             return true
         }
 
+        override fun onSingleTapConfirmed(e: MotionEvent?): Boolean {
+            onTap()
+            return true
+        }
+
         override fun onDown(e: MotionEvent?): Boolean {
             return true
         }
@@ -120,6 +125,14 @@ class ChartView @JvmOverloads constructor(
         }
 
         override fun onSelectionChange() {
+            invalidate()
+        }
+
+        override fun onMinimum(minX: Long) {
+            invalidate()
+        }
+
+        override fun onMaximum(maxX: Long) {
             invalidate()
         }
     }
@@ -475,12 +488,12 @@ class ChartView @JvmOverloads constructor(
             } else if (previous.x == model.selectedX) {
                 previous.y
             } else {
-                val next = model.getThisOrNext(dataSource, model.selectedX)
+                val next = getNext(dataSource, model.selectedX)
                 if (next == null) {
                     continue
                 } else {
-                    val formula = calculateLineFormula(VisualPoint(next.x.toFloat(),
-                                                                   next.y.toFloat()),
+                    val formula = calculateLineFormula(VisualPoint(previous.x.toFloat(),
+                                                                   previous.y.toFloat()),
                                                        VisualPoint(next.x.toFloat(),
                                                                    next.y.toFloat()))
                     formula.getY(dataX.toFloat()).toDouble().roundToLong()
@@ -496,6 +509,19 @@ class ChartView @JvmOverloads constructor(
         }
 
         drawSelectionLegend(canvas, visualX, dataSource2yInfo)
+    }
+
+    private fun getNext(dataSource: ChartDataSource, baseX: Long): DataPoint? {
+        var x = baseX
+        while (true) {
+            val point = model.getNext(dataSource, x) ?: return null
+            x = point.x
+            val dx = (point.x - baseX) * drawData.xAxis.unitSize
+            if (dx.roundToLong() < MIN_PLOT_UNIT_PX) {
+                continue
+            }
+            return point
+        }
     }
 
     private fun drawSelectionPlotSign(canvas: Canvas, point: VisualPoint, color: Int) {
@@ -745,11 +771,26 @@ class ChartView @JvmOverloads constructor(
         val rightDelta = totalDelta / 2
         val leftDelta = rightDelta - totalDelta
         val newRange = Range(currentRange.start + leftDelta, currentRange.end + rightDelta)
+            .mayBeCut(model.minX, model.maxX)
+        if (newRange == currentRange) {
+            return
+        }
+
         model.setActiveRange(newRange, dataAnchor)
         drawData.refresh()
     }
 
     private fun onScroll(deltaVisualX: Float) {
+        val activeRange = model.getActiveRange(dataAnchor)
+        val minX = model.minX
+        val maxX = model.maxX
+        if (deltaVisualX == 0.0f
+            || (deltaVisualX < 0 && minX != null && minX >= activeRange.start)
+            || (deltaVisualX > 0 && maxX != null && maxX <= activeRange.end)
+        ) {
+            return
+        }
+
         var deltaDataX = (deltaVisualX / drawData.xAxis.unitSize).toLong()
         if (deltaDataX == 0L) {
             deltaDataX = if (deltaVisualX < 0) {
@@ -758,7 +799,35 @@ class ChartView @JvmOverloads constructor(
                 2L
             }
         }
-        model.setActiveRange(model.getActiveRange(dataAnchor).shift(deltaDataX), dataAnchor)
+        model.setActiveRange(activeRange.shift(deltaDataX), dataAnchor)
+    }
+
+    private fun onTap() {
+        val legendRect = legendRect
+        if (legendRect != null
+            && ::model.isInitialized
+            && legendRect.contains(lastClickVisualX, lastClickVisualY)
+        ) {
+            model.resetSelection()
+            return
+        }
+
+        if (!::config.isInitialized || !::model.isInitialized || !config.selectionAllowed) {
+            return
+        }
+
+        model.selectedX = drawData.visualXToDataX(lastClickVisualX)
+    }
+
+    companion object {
+        /**
+         * There is a possible case that the scale is so small that thousands/millions of data points are covered
+         * by the active range. There is no point for us in trying to draw edges between every to points then.
+         * We choose only subset of points which are distant enough from each other then.
+         *
+         * Current constant defines minimum interested visual length to use during that.
+         */
+        const val MIN_PLOT_UNIT_PX = 2
     }
 
     private data class ValueInfo(val dataValue: Long, val visualValue: Float)

@@ -41,6 +41,36 @@ class ChartModelImpl(private val bufferPagesCount: Int = 3, workersPool: Executo
         addListener(autoLoader)
     }
 
+    override val bufferRange get() = _bufferRange
+
+    override val minX: Long?
+        get() {
+            var result: Long? = null
+            for (dataSource in points.keys) {
+                minimums[dataSource]?.let {
+                    val r = result
+                    if (r == null || r > it) {
+                        result = it
+                    }
+                } ?: return null
+            }
+            return result
+        }
+
+    override val maxX: Long?
+        get() {
+            var result: Long? = null
+            for (dataSource in points.keys) {
+                maximums[dataSource]?.let {
+                    val r = result
+                    if (r == null || r < it) {
+                        result = it
+                    }
+                } ?: return null
+            }
+            return result
+        }
+
     override val hasSelection get() = _hasSelection
     override var selectedX: Long
         get() {
@@ -68,12 +98,15 @@ class ChartModelImpl(private val bufferPagesCount: Int = 3, workersPool: Executo
         return activeRanges[anchor] ?: Range.EMPTY_RANGE
     }
 
-    override val bufferRange get() = _bufferRange
-
     override fun setActiveRange(range: Range, anchor: Any) {
-        activeRanges[anchor] = range
+        val rangeToUse = range.mayBeCut(minX, maxX)
+        val previousRange = activeRanges.put(anchor, rangeToUse)
+        if (previousRange == rangeToUse) {
+            return
+        }
+
         val newCompoundRange = if (compoundActiveRange.empty) {
-            range
+            rangeToUse
         } else {
             var min = Long.MAX_VALUE
             var max = Long.MIN_VALUE
@@ -85,7 +118,7 @@ class ChartModelImpl(private val bufferPagesCount: Int = 3, workersPool: Executo
         }
 
         if (compoundActiveRange != newCompoundRange) {
-            compoundActiveRange = newCompoundRange
+            compoundActiveRange = newCompoundRange.mayBeCut(minX, maxX)
             refreshBufferRange()
 
             for (rangesList in loadedRanges.values) {
@@ -176,6 +209,11 @@ class ChartModelImpl(private val bufferPagesCount: Int = 3, workersPool: Executo
         return dataSourcePoints.get(x) ?: dataSourcePoints.getNextValue(x)
     }
 
+    override fun getNext(dataSource: ChartDataSource, x: Long): DataPoint? {
+        val dataSourcePoints = points[dataSource] ?: return null
+        return dataSourcePoints.getNextValue(x)
+    }
+
     override fun isLoadingInProgress(dataSource: ChartDataSource): Boolean {
         for (range in activeRanges.values) {
             if (autoLoader.isLoadingInProgress(dataSource, range.start, range.end)) {
@@ -264,7 +302,15 @@ class ChartModelImpl(private val bufferPagesCount: Int = 3, workersPool: Executo
     }
 
     fun setMin(dataSource: ChartDataSource, min: Long) {
+        val previousMinimum = minX
         minimums[dataSource] = min
+        val currentMinimum = minX
+        if (currentMinimum != null && currentMinimum != previousMinimum) {
+            notifyListeners {
+                it.onMinimum(currentMinimum)
+            }
+            mayBeCutActiveRangesOnMinMaxChange()
+        }
     }
 
     override fun getMax(dataSource: ChartDataSource): Long? {
@@ -272,7 +318,26 @@ class ChartModelImpl(private val bufferPagesCount: Int = 3, workersPool: Executo
     }
 
     fun setMax(dataSource: ChartDataSource, max: Long) {
+        val previousMaximum = maxX
         maximums[dataSource] = max
+        val currentMaximum = maxX
+        if (currentMaximum != null && currentMaximum != previousMaximum) {
+            notifyListeners {
+                it.onMaximum(currentMaximum)
+            }
+            mayBeCutActiveRangesOnMinMaxChange()
+        }
+    }
+
+    private fun mayBeCutActiveRangesOnMinMaxChange() {
+        for ((anchor, range) in activeRanges) {
+            val newRange = range.mayBeCut(minX, maxX)
+            if (newRange != range) {
+                setActiveRange(newRange, anchor)
+                mayBeCutActiveRangesOnMinMaxChange()
+                return
+            }
+        }
     }
 
     private data class ListenerRecord(val listener: ChartModelListener, var notificationInProgress: Boolean = false)
