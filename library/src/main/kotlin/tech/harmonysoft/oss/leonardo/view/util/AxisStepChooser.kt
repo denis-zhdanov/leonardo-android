@@ -14,14 +14,15 @@ class AxisStepChooser {
         var low: Long = 1
         var high: Long = 10
         while (true) {
-            val value = currentRange.findFirstStepValue(high)
-            val checkResult = checkStep(textStrategy,
-                                        measurer,
-                                        minGapStrategy,
-                                        currentRange,
-                                        availableVisualSpace,
-                                        high,
-                                        value)
+            val checkResult = currentRange.findFirstStepValue(high)?.let {
+                checkStep(textStrategy,
+                          measurer,
+                          minGapStrategy,
+                          currentRange,
+                          availableVisualSpace,
+                          high,
+                          it)
+            } ?: CheckResult.TOO_BIG
             if (checkResult == CheckResult.OK) {
                 return high
             } else if (checkResult == CheckResult.TOO_BIG) {
@@ -37,18 +38,19 @@ class AxisStepChooser {
             if (candidate == low) {
                 return low
             }
-            val value = currentRange.findFirstStepValue(high)
-            val checkResult = checkStep(textStrategy,
-                                        measurer,
-                                        minGapStrategy,
-                                        currentRange,
-                                        availableVisualSpace,
-                                        candidate,
-                                        value)
+            val checkResult = currentRange.findFirstStepValue(high)?.let {
+                checkStep(textStrategy,
+                          measurer,
+                          minGapStrategy,
+                          currentRange,
+                          availableVisualSpace,
+                          candidate,
+                          it)
+            } ?: CheckResult.TOO_BIG
             when (checkResult) {
-                AxisStepChooser.CheckResult.OK        -> return candidate
-                AxisStepChooser.CheckResult.TOO_BIG   -> high = candidate
-                AxisStepChooser.CheckResult.TOO_SMALL -> low = candidate
+                CheckResult.OK        -> return candidate
+                CheckResult.TOO_BIG   -> high = candidate
+                CheckResult.TOO_SMALL -> low = candidate
             }
         }
         return low
@@ -62,9 +64,6 @@ class AxisStepChooser {
                           step: Long,
                           firstValue: Long): CheckResult {
         var remainingVisualSpace = availableVisualSpace
-        if (firstValue == Long.MIN_VALUE) {
-            return CheckResult.TOO_BIG
-        }
         var labelsNumber = 0
         var value = firstValue
         while (range.contains(value) && remainingVisualSpace >= 0) {

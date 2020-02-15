@@ -17,8 +17,6 @@ class ChartDataAutoLoader(
 
     private val tasks = mutableSetOf<ChartDataLoadTask>()
 
-    private var lastKnownBufferRange = Range.EMPTY_RANGE
-
     init {
         model.addListener(this)
     }
@@ -61,8 +59,6 @@ class ChartDataAutoLoader(
         if (bufferRange.empty) {
             return
         }
-
-        lastKnownBufferRange = bufferRange
 
         for (dataSource in model.registeredDataSources) {
             val loadedRanges = model.getLoadedRanges(dataSource)

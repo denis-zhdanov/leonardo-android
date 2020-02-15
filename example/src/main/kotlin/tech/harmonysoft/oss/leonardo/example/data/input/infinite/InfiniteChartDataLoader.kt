@@ -1,6 +1,5 @@
 package tech.harmonysoft.oss.leonardo.example.data.input.infinite
 
-import tech.harmonysoft.oss.leonardo.model.DataPoint
 import tech.harmonysoft.oss.leonardo.model.data.ChartDataLoader
 import tech.harmonysoft.oss.leonardo.model.data.LoadHandle
 import java.util.*
@@ -10,7 +9,7 @@ import java.util.concurrent.TimeUnit
 
 class InfiniteChartDataLoader(private val delayMs: Long? = null) : ChartDataLoader {
 
-    private val cache = ConcurrentHashMap<Long, DataPoint>()
+    private val cache = ConcurrentHashMap<Long, Long>()
 
     override fun load(from: Long, to: Long, handle: LoadHandle) {
         val action = { doLoad(from, to, handle) }
@@ -25,19 +24,17 @@ class InfiniteChartDataLoader(private val delayMs: Long? = null) : ChartDataLoad
         var prevY: Long? = null
         val random = Random()
         for (x in (from..to)) {
-            val cached = cache[x]
-            if (cached == null) {
+            val cachedY = cache[x]
+            if (cachedY == null) {
                 val sign = if (random.nextBoolean()) 1 else -1
                 val shift = sign * random.nextInt(Y_RANGE_LENGTH / 10) + Y_MIN.toLong()
-                val y = if (prevY == null) {
-                    shift
-                } else {
-                    prevY + shift
-                }
+                val y = shift + (prevY ?: 0)
+                cache[x] = y
                 handle.onPointLoaded(x, y)
                 prevY = y
             } else {
-                handle.onPointLoaded(cached.x, cached.y)
+                handle.onPointLoaded(x, cachedY)
+                prevY = cachedY
             }
         }
         handle.onLoadingEnd()

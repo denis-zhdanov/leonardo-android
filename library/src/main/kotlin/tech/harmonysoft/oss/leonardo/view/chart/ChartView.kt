@@ -292,7 +292,7 @@ class ChartView @JvmOverloads constructor(
     private fun drawXAxisLabels(canvas: Canvas, range: Range, step: Long, alpha: Int) {
         val unitWidth = width.toFloat() / range.size
         val paint = palette.xLabelPaint.apply { this.alpha = alpha }
-        var value = range.findFirstStepValue(step)
+        var value = range.findFirstStepValue(step) ?: return
         var x = drawData.xAxis.visualShift + unitWidth * (value - range.start)
         while (x >= 0 && x < width) {
             val label = config.xAxisConfig.labelTextStrategy.getLabel(value, step)
@@ -324,7 +324,7 @@ class ChartView @JvmOverloads constructor(
 
     private fun drawYGrid(canvas: Canvas, range: Range, dataStep: Long, alpha: Int) {
         val drawGrid = alpha > 128
-        var value = range.findFirstStepValue(dataStep)
+        var value = range.findFirstStepValue(dataStep) ?: return
         while (true) {
             var y = drawData.dataYToVisualY(value)
             if (y <= 0) {
@@ -748,10 +748,10 @@ class ChartView @JvmOverloads constructor(
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    override fun onTouchEvent(event: MotionEvent?): Boolean {
+    override fun onTouchEvent(event: MotionEvent): Boolean {
         rescaled = false
         scaleDetector.onTouchEvent(event)
-        if (!rescaled) {
+        if (!rescaled && event.pointerCount == 1) {
             gestureDetector.onTouchEvent(event)
         }
         return true
@@ -759,12 +759,18 @@ class ChartView @JvmOverloads constructor(
 
     private fun onRescale(scaleFactor: Float) {
         rescaled = true
+        if (scaleFactor == 1.0f) {
+            return
+        }
         val currentRange = model.getActiveRange(dataAnchor)
-        if (currentRange.size <= 3 && scaleFactor > 0) {
+        if (currentRange.size <= 3 && scaleFactor > 1) {
             return
         }
         val currentPointsNumber = currentRange.size + 1
-        val newRangePointsNumber = (currentPointsNumber / scaleFactor).toLong()
+        var newRangePointsNumber = (currentPointsNumber / scaleFactor).toLong()
+        if (newRangePointsNumber == currentPointsNumber && scaleFactor < 1f) {
+            newRangePointsNumber += 2
+        }
         if (newRangePointsNumber <= 3 || newRangePointsNumber == currentPointsNumber) {
             return
         }

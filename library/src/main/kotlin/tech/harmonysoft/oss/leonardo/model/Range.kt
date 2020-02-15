@@ -12,20 +12,20 @@ data class Range(val start: Long, val end: Long) {
         return Range(start + delta, end + delta)
     }
 
-    fun findFirstStepValue(step: Long): Long {
+    fun findFirstStepValue(step: Long): Long? {
         if (step <= 0) {
             throw IllegalArgumentException("Given step value ($step) is negative. Range: $this")
         }
 
         if (step > end && step > -start) {
-            return Long.MIN_VALUE
+            return null
         }
 
         val value = step * (start / step)
         return when {
             value >= start -> value
             value + step <= end -> value + step
-            else -> Long.MIN_VALUE
+            else -> null
         }
     }
 
