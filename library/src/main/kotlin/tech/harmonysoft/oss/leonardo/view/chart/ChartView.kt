@@ -449,8 +449,10 @@ class ChartView @JvmOverloads constructor(
             drawContext.path.moveTo(previousVisualPoint.x, previousVisualPoint.y)
         }
 
-        drawContext.path.lineTo(visualPoint.x, visualPoint.y)
-        drawContext.previousVisualPoint = visualPoint
+        if (visualPoint.x - previousVisualPoint.x >= MIN_PLOT_UNIT_PX) {
+            drawContext.path.lineTo(visualPoint.x, visualPoint.y)
+            drawContext.previousVisualPoint = visualPoint
+        }
         return true
     }
 
