@@ -55,7 +55,7 @@ class ChartInitializer(private val settingsManager: SettingsManager, eventBus: E
         addSelectors(row.findViewById(R.id.row_settings), model)
         setupPersistentSettings(settingsManager.getChartSettings(chartData.name), model, chart)
 
-        row.findViewById<TextView>(R.id.row_title).text = chartData.name
+//        row.findViewById<TextView>(R.id.row_title).text = chartData.name
 
         holder.addView(row)
     }

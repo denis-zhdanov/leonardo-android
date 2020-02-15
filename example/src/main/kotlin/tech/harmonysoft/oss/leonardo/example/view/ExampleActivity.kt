@@ -56,10 +56,6 @@ class ExampleActivity : AppCompatActivity() {
 
     private fun setupActionBar() {
         setSupportActionBar(toolbar)
-        supportActionBar?.apply {
-            setDisplayHomeAsUpEnabled(true)
-            setHomeAsUpIndicator(R.drawable.ic_menu)
-        }
     }
 
     private fun setupChart() {
