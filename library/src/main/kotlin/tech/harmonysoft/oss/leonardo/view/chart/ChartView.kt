@@ -7,6 +7,7 @@ import android.graphics.*
 import android.util.AttributeSet
 import android.view.GestureDetector
 import android.view.MotionEvent
+import android.view.ScaleGestureDetector
 import android.view.View
 import androidx.core.view.GestureDetectorCompat
 import tech.harmonysoft.oss.leonardo.model.DataPoint
@@ -43,6 +44,13 @@ class ChartView @JvmOverloads constructor(
         }
 
         override fun onDown(e: MotionEvent?): Boolean {
+            return true
+        }
+    })
+
+    private val scaleDetector = ScaleGestureDetector(context, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+        override fun onScale(detector: ScaleGestureDetector): Boolean {
+            onRescale(detector.scaleFactor)
             return true
         }
     })
@@ -120,6 +128,7 @@ class ChartView @JvmOverloads constructor(
     private var lastClickVisualY = 0f
 
     private var legendRect: RectF? = null
+    private var rescaled = false
 
     init {
         setOnTouchListener { _, event ->
@@ -712,11 +721,43 @@ class ChartView @JvmOverloads constructor(
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent?): Boolean {
-        return gestureDetector.onTouchEvent(event)
+        rescaled = false
+        scaleDetector.onTouchEvent(event)
+        if (!rescaled) {
+            gestureDetector.onTouchEvent(event)
+        }
+        return true
+    }
+
+    private fun onRescale(scaleFactor: Float) {
+        rescaled = true
+        val currentRange = model.getActiveRange(dataAnchor)
+        if (currentRange.size <= 3 && scaleFactor > 0) {
+            return
+        }
+        val currentPointsNumber = currentRange.size + 1
+        val newRangePointsNumber = (currentPointsNumber / scaleFactor).toLong()
+        if (newRangePointsNumber <= 3 || newRangePointsNumber == currentPointsNumber) {
+            return
+        }
+
+        val totalDelta = newRangePointsNumber - currentPointsNumber
+        val rightDelta = totalDelta / 2
+        val leftDelta = rightDelta - totalDelta
+        val newRange = Range(currentRange.start + leftDelta, currentRange.end + rightDelta)
+        model.setActiveRange(newRange, dataAnchor)
+        drawData.refresh()
     }
 
     private fun onScroll(deltaVisualX: Float) {
-        val deltaDataX = (deltaVisualX / drawData.xAxis.unitSize).toLong()
+        var deltaDataX = (deltaVisualX / drawData.xAxis.unitSize).toLong()
+        if (deltaDataX == 0L) {
+            deltaDataX = if (deltaVisualX < 0) {
+                -2L
+            } else {
+                2L
+            }
+        }
         model.setActiveRange(model.getActiveRange(dataAnchor).shift(deltaDataX), dataAnchor)
     }
 

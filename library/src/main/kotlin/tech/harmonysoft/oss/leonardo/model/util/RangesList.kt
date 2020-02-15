@@ -70,7 +70,9 @@ class RangesList {
             if (r.end < range.end) {
                 toKeep += r
             } else {
-                toKeep += Range(r.start, range.end)
+                if (r.start <= range.end) {
+                    toKeep += Range(r.start, range.end)
+                }
                 break
             }
             i++
@@ -107,6 +109,10 @@ class RangesList {
             result.add(Range(targetStart, target.end))
         }
         return result
+    }
+
+    override fun toString(): String {
+        return ranges.toString()
     }
 
     companion object {

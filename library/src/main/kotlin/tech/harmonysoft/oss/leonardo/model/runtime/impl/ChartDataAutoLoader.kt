@@ -52,9 +52,7 @@ class ChartDataAutoLoader(
     private fun mayBeLoadRanges() {
         val bufferRange = model.bufferRange
 
-        if (bufferRange.empty
-            || (bufferRange.start >= lastKnownBufferRange.start && bufferRange.end <= lastKnownBufferRange.end)
-        ) {
+        if (bufferRange.empty) {
             return
         }
 
