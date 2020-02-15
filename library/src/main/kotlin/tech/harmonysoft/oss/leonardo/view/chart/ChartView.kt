@@ -12,7 +12,6 @@ import android.view.View
 import android.view.animation.DecelerateInterpolator
 import androidx.core.view.GestureDetectorCompat
 import tech.harmonysoft.oss.leonardo.model.DataPoint
-import tech.harmonysoft.oss.leonardo.model.LineFormula
 import tech.harmonysoft.oss.leonardo.model.Range
 import tech.harmonysoft.oss.leonardo.model.VisualPoint
 import tech.harmonysoft.oss.leonardo.model.config.chart.ChartConfig
@@ -412,12 +411,19 @@ class ChartView @JvmOverloads constructor(
         var x: Float
         var y: Float
         if (visualPoint.x > drawContext.maxVisualX) {
-            val formula = calculateLineFormula(previousVisualPoint, visualPoint)
             x = drawContext.maxVisualX
-            y = formula.getY(x)
+            y = calculateLinePointY(x1 = previousVisualPoint.x,
+                                    y1 = previousVisualPoint.y,
+                                    x2 = visualPoint.x,
+                                    y2 = visualPoint.y,
+                                    targetPointX = x)
             if (y > drawData.chartBottom) {
                 y = drawData.chartBottom.toFloat()
-                x = formula.getX(y)
+                x = calculateLinePointX(x1 = previousVisualPoint.x,
+                                        y1 = previousVisualPoint.y,
+                                        x2 = visualPoint.x,
+                                        y2 = visualPoint.y,
+                                        targetPointY = y)
             }
             if (!drawContext.drawn) {
                 drawContext.path.moveTo(previousVisualPoint.x, previousVisualPoint.y)
@@ -427,12 +433,19 @@ class ChartView @JvmOverloads constructor(
         }
 
         if (previousVisualPoint.x < drawContext.minVisualX) {
-            val formula = calculateLineFormula(previousVisualPoint, visualPoint)
             x = drawContext.minVisualX
-            y = formula.getY(x)
+            y = calculateLinePointY(x1 = previousVisualPoint.x,
+                                    y1 = previousVisualPoint.y,
+                                    x2 = visualPoint.x,
+                                    y2 = visualPoint.y,
+                                    targetPointX = x)
             if (y > drawData.chartBottom) {
                 y = drawData.chartBottom.toFloat()
-                x = formula.getX(y)
+                x = calculateLinePointX(x1 = previousVisualPoint.x,
+                                        y1 = previousVisualPoint.y,
+                                        x2 = visualPoint.x,
+                                        y2 = visualPoint.y,
+                                        targetPointY = y)
             }
             drawContext.path.moveTo(x, y)
             if (visualPoint.x != x || visualPoint.y != y) {
@@ -455,10 +468,16 @@ class ChartView @JvmOverloads constructor(
         return true
     }
 
-    private fun calculateLineFormula(p1: VisualPoint, p2: VisualPoint): LineFormula {
-        val a = (p1.y - p2.y) / (p1.x - p2.x)
-        val b = p1.y - a * p1.x
-        return LineFormula(a, b)
+    private fun calculateLinePointX(x1: Float, y1: Float, x2: Float, y2: Float, targetPointY: Float): Float {
+        val a = (y1 - y2) / (x1 - x2)
+        val b = y1 - a * x1
+        return (targetPointY - b) / a
+    }
+
+    private fun calculateLinePointY(x1: Float, y1: Float, x2: Float, y2: Float, targetPointX: Float): Float {
+        val a = (y1 - y2) / (x1 - x2)
+        val b = y1 - a * x1
+        return a * targetPointX + b
     }
 
     private fun drawSelection(canvas: Canvas) {
@@ -493,11 +512,11 @@ class ChartView @JvmOverloads constructor(
                 if (next == null) {
                     continue
                 } else {
-                    val formula = calculateLineFormula(VisualPoint(previous.x.toFloat(),
-                                                                   previous.y.toFloat()),
-                                                       VisualPoint(next.x.toFloat(),
-                                                                   next.y.toFloat()))
-                    formula.getY(dataX.toFloat()).toDouble().roundToLong()
+                    calculateLinePointY(x1 = previous.x.toFloat(),
+                                        y1 = previous.y.toFloat(),
+                                        x2 = next.x.toFloat(),
+                                        y2 = next.y.toFloat(),
+                                        targetPointX = dataX.toFloat()).roundToLong()
                 }
             }
 
