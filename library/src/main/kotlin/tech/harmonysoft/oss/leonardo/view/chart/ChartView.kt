@@ -9,6 +9,7 @@ import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
+import android.view.animation.AccelerateDecelerateInterpolator
 import androidx.core.view.GestureDetectorCompat
 import tech.harmonysoft.oss.leonardo.model.DataPoint
 import tech.harmonysoft.oss.leonardo.model.LineFormula
@@ -19,6 +20,7 @@ import tech.harmonysoft.oss.leonardo.model.data.ChartDataSource
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModel
 import tech.harmonysoft.oss.leonardo.model.runtime.ChartModelListener
 import tech.harmonysoft.oss.leonardo.model.util.LeonardoUtil
+import tech.harmonysoft.oss.leonardo.view.util.IterationAwareValueAnimator
 import tech.harmonysoft.oss.leonardo.view.util.RoundedRectangleDrawer
 import kotlin.math.max
 import kotlin.math.min
@@ -39,12 +41,20 @@ class ChartView @JvmOverloads constructor(
 
     private val gestureDetector = GestureDetectorCompat(context, object : GestureDetector.SimpleOnGestureListener() {
         override fun onScroll(e1: MotionEvent?, e2: MotionEvent?, distanceX: Float, distanceY: Float): Boolean {
-            onScroll(distanceX)
+            onScroll(distanceX, false)
             return true
         }
 
-        override fun onSingleTapConfirmed(e: MotionEvent?): Boolean {
-            onTap()
+        override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
+            if (e.pointerCount == 1) {
+                onTap()
+            }
+            return true
+        }
+
+        override fun onFling(e1: MotionEvent, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
+            flingAnimator.start(-velocityX / 5000 * FLING_DURATION_MILLIS)
+            pendingFlingVisualDeltaX = 0.0f
             return true
         }
 
@@ -62,6 +72,11 @@ class ChartView @JvmOverloads constructor(
 
     private val drawContext = PlotDrawContext()
     private val drawerCallback: (DataPoint) -> Boolean = this::doDraw
+
+    private val flingAnimator = IterationAwareValueAnimator(FLING_DURATION_MILLIS, AccelerateDecelerateInterpolator()) {
+        onScroll(it, true)
+    }
+    private var pendingFlingVisualDeltaX = 0.0f
 
     private lateinit var _dataAnchor: Any
 
@@ -148,22 +163,6 @@ class ChartView @JvmOverloads constructor(
             lastClickVisualX = event.x
             lastClickVisualY = event.y
             false
-        }
-        setOnClickListener {
-            val legendRect = legendRect
-            if (legendRect != null
-                && ::model.isInitialized
-                && legendRect.contains(lastClickVisualX, lastClickVisualY)
-            ) {
-                model.resetSelection()
-                return@setOnClickListener
-            }
-
-            if (!::config.isInitialized || !::model.isInitialized || !config.selectionAllowed) {
-                return@setOnClickListener
-            }
-
-            model.selectedX = drawData.visualXToDataX(lastClickVisualX)
         }
     }
 
@@ -788,29 +787,43 @@ class ChartView @JvmOverloads constructor(
         drawData.refresh()
     }
 
-    private fun onScroll(deltaVisualX: Float) {
+    private fun onScroll(deltaVisualX: Float, fling: Boolean) {
+        val deltaVisualXToUse = if (fling) {
+            deltaVisualX + pendingFlingVisualDeltaX
+        } else {
+            flingAnimator.cancel()
+            deltaVisualX
+        }
         val activeRange = model.getActiveRange(dataAnchor)
         val minX = model.minX
         val maxX = model.maxX
-        if (deltaVisualX == 0.0f
-            || (deltaVisualX < 0 && minX != null && minX >= activeRange.start)
-            || (deltaVisualX > 0 && maxX != null && maxX <= activeRange.end)
+        if (deltaVisualXToUse == 0.0f
+            || (deltaVisualXToUse < 0 && minX != null && minX >= activeRange.start)
+            || (deltaVisualXToUse > 0 && maxX != null && maxX <= activeRange.end)
         ) {
+            pendingFlingVisualDeltaX = deltaVisualXToUse
             return
         }
 
-        var deltaDataX = (deltaVisualX / drawData.xAxis.unitSize).toLong()
+        var deltaDataX = (deltaVisualXToUse / drawData.xAxis.unitSize).toLong()
         if (deltaDataX == 0L) {
-            deltaDataX = if (deltaVisualX < 0) {
-                -2L
+            if (fling) {
+                pendingFlingVisualDeltaX = deltaVisualXToUse
+                return
             } else {
-                2L
+                deltaDataX = if (deltaVisualXToUse < 0) {
+                    -2L
+                } else {
+                    2L
+                }
             }
         }
+        pendingFlingVisualDeltaX = 0.0f
         model.setActiveRange(activeRange.shift(deltaDataX), dataAnchor)
     }
 
     private fun onTap() {
+        flingAnimator.cancel()
         val legendRect = legendRect
         if (legendRect != null
             && ::model.isInitialized
@@ -836,6 +849,8 @@ class ChartView @JvmOverloads constructor(
          * Current constant defines minimum interested visual length to use during that.
          */
         const val MIN_PLOT_UNIT_PX = 2
+
+        const val FLING_DURATION_MILLIS = 500
     }
 
     private data class ValueInfo(val dataValue: Long, val visualValue: Float)
