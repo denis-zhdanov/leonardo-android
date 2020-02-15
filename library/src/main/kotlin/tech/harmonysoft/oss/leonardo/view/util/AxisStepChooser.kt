@@ -11,8 +11,12 @@ class AxisStepChooser {
                availableVisualSpace: Int,
                measurer: TextSpaceMeasurer
     ): Long {
-        var low: Long = 1
-        var high: Long = 10
+        var low = 1L
+        var high = if (currentRange.size >= 4) {
+            currentRange.size / 4
+        } else {
+            10
+        }
         while (true) {
             val checkResult = currentRange.findFirstStepValue(high)?.let {
                 checkStep(textStrategy,
