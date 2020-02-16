@@ -40,8 +40,10 @@ ext {
     daggerVersion = '2.22.1'
 }
 
+
 dependencies {
-    implementation project(':leonardo')
+//    implementation project(':leonardo')
+    implementation "tech.harmonysoft:leonardo:${rootProject.ext.version}@aar"
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 

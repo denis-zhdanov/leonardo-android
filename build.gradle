@@ -15,7 +15,7 @@ buildscript {
 apply plugin: 'io.codearte.nexus-staging'
 
 ext {
-    version = 1
+    version = 3
 }
 
 subprojects {
