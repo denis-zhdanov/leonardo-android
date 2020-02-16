@@ -1,3 +1,4 @@
 include ':library', ':example'
 
 project(':library').name = 'leonardo'
+project(':example').name = 'leonardo-example'

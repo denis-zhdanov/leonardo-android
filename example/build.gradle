@@ -9,14 +9,13 @@ android {
     compileSdkVersion 28
 
     defaultConfig {
-        applicationId "harmonysoft.tech.chart.example"
+        applicationId "harmonysoft.tech.oss.leonardo.example"
         minSdkVersion 19
         targetSdkVersion 28
-        versionCode 1
-        versionName "1.0"
+        versionCode rootProject.ext.version
+        versionName "${rootProject.ext.version}"
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-
     }
 
     compileOptions {
@@ -39,7 +38,6 @@ android {
 ext {
     daggerVersion = '2.22.1'
 }
-
 
 dependencies {
 //    implementation project(':leonardo')
