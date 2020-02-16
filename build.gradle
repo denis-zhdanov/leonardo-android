@@ -8,10 +8,22 @@ buildscript {
     dependencies {
         classpath 'com.android.tools.build:gradle:3.5.2'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath "io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.11.0"
     }
 }
 
+apply plugin: 'io.codearte.nexus-staging'
+
+ext {
+    version = 1
+}
+
 subprojects {
+    apply plugin: 'maven'
+    apply plugin: 'maven-publish'
+
+    group 'tech.harmonysoft'
+
     repositories {
         google()
         jcenter()
