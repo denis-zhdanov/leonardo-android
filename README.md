@@ -1,3 +1,5 @@
+[![Maven Central](https://img.shields.io/maven-central/v/tech.harmonysoft/leonardo)](https://img.shields.io/maven-central/v/tech.harmonysoft/leonardo)
+
 ## Tl;DR
 
 A chart drawing kotlin Android library designed to work with dynamic data loading and unloading.
