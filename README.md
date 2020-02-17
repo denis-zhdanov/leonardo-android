@@ -1,4 +1,4 @@
-![jCenter](https://bintray.com/denis-zhdanov/harmonysoft.tech/leonardo/_latestVersion)
+![Bintray](https://img.shields.io/bintray/v/denis-zhdanov/harmonysoft.tech/leonardo)
 ![Maven Central](https://img.shields.io/maven-central/v/tech.harmonysoft/leonardo)
 
 ## Tl;DR
