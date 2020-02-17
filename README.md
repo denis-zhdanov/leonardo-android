@@ -1,4 +1,4 @@
-[ ![jCenter](https://api.bintray.com/packages/denis-zhdanov/harmonysoft.tech/leonardo/images/download.svg) ](https://bintray.com/denis-zhdanov/harmonysoft.tech/leonardo/_latestVersion)
+![jCenter](https://bintray.com/denis-zhdanov/harmonysoft.tech/leonardo/_latestVersion)
 ![Maven Central](https://img.shields.io/maven-central/v/tech.harmonysoft/leonardo)
 
 ## Tl;DR
