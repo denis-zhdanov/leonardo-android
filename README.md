@@ -13,4 +13,4 @@ With this library we have a dedicated [ChartView](library/src/main/kotlin/tech/h
 
 ## Example
 
-A sample application which illustrates the library in action can be found on [Play Market](TBD). It uses infinite on-the-fly data loading strategy.
+A sample application which illustrates the library in action can be found on [Play Market](https://play.google.com/store/apps/details?id=harmonysoft.tech.oss.leonardo.example). It uses infinite on-the-fly data loading strategy.
